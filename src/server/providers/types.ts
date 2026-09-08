@@ -12,6 +12,8 @@ export type DiscoveryInput = {
   language: string;
   maxResults: number;
   locationLabel: string;
+  /** Remaining paid requests this month (Google). Undefined = unlimited. */
+  requestBudget?: number;
 };
 
 export type RawBusiness = {
@@ -39,10 +41,12 @@ export type RawBusiness = {
   socialLinks?: Record<string, string>;
 };
 
+export type SearchResult = { businesses: RawBusiness[]; requestsUsed: number; budgetHit: boolean };
+
 export interface BusinessProvider {
   key: "google_places" | "overpass";
   isConfigured(): boolean;
-  search(input: DiscoveryInput, onProgress?: (msg: string) => void): Promise<RawBusiness[]>;
+  search(input: DiscoveryInput, onProgress?: (msg: string) => void): Promise<SearchResult>;
 }
 
 export function haversineKm(a: GeoPoint, b: GeoPoint) {

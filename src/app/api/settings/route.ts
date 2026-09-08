@@ -11,6 +11,8 @@ const schema = z.object({
   defaultCountry: z.string().length(2).optional(),
   signature: z.string().max(600).nullable().optional(),
   aiMinOpportunity: z.number().int().min(0).max(100).optional(),
+  googleMonthlyBudget: z.number().int().min(0).max(1_000_000).optional(),
+  googleBudgetFallback: z.boolean().optional(),
 });
 
 export async function PUT(req: Request) {

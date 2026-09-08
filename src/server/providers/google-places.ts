@@ -1,6 +1,7 @@
 import { env } from "@/lib/env";
-import type { BusinessProvider, DiscoveryInput, RawBusiness } from "./types";
+import type { BusinessProvider, DiscoveryInput, RawBusiness, SearchResult } from "./types";
 import { haversineKm } from "./types";
+import { recordUsage } from "./usage";
 
 const ENDPOINT = "https://places.googleapis.com/v1/places:searchText";
 const FIELD_MASK = [
@@ -45,8 +46,11 @@ export class GooglePlacesProvider implements BusinessProvider {
     return Boolean(env.googlePlacesKey);
   }
 
-  async search(input: DiscoveryInput, onProgress?: (msg: string) => void): Promise<RawBusiness[]> {
+  async search(input: DiscoveryInput, onProgress?: (msg: string) => void): Promise<SearchResult> {
     const seen = new Map<string, RawBusiness>();
+    let requestsUsed = 0;
+    let budgetHit = false;
+    const budget = input.requestBudget ?? Number.POSITIVE_INFINITY;
     const radiusM = Math.min(50_000, Math.max(500, input.radiusKm * 1000));
     const lang = input.language as "en" | "nl";
     const terms = input.industry ? (input.industry.terms[lang] ?? input.industry.terms.en) : [input.query];
@@ -56,11 +60,15 @@ export class GooglePlacesProvider implements BusinessProvider {
     const queries: Array<{ term: string; center: { lat: number; lng: number }; radius: number }> = [];
     for (const term of terms) for (const c of centers) queries.push({ term, center: c, radius: centers.length > 1 ? radiusM / 2 : radiusM });
 
-    for (const q of queries) {
+    outer: for (const q of queries) {
       if (seen.size >= input.maxResults) break;
-      onProgress?.(`Google Places: "${q.term}" (${seen.size} found)`);
+      onProgress?.(`Google Places: "${q.term}" (${seen.size} found · ${requestsUsed} requests)`);
       let pageToken: string | undefined;
       for (let page = 0; page < 3; page++) {
+        if (requestsUsed >= budget) {
+          budgetHit = true;
+          break outer;
+        }
         const body: Record<string, unknown> = {
           textQuery: `${q.term} in ${input.locationLabel}`,
           pageSize: 20,
@@ -71,6 +79,8 @@ export class GooglePlacesProvider implements BusinessProvider {
         if (input.industry?.googleType) body.includedType = input.industry.googleType;
         if (pageToken) body.pageToken = pageToken;
         const data = await this.request(body);
+        requestsUsed++;
+        await recordUsage("google_places").catch(() => {});
         for (const p of data.places ?? []) {
           if (!p.id || seen.has(p.id)) continue;
           if (p.location && haversineKm(input.center, { lat: p.location.latitude, lng: p.location.longitude }) > input.radiusKm * 1.15) continue;
@@ -81,7 +91,7 @@ export class GooglePlacesProvider implements BusinessProvider {
         await sleep(300);
       }
     }
-    return [...seen.values()].slice(0, input.maxResults);
+    return { businesses: [...seen.values()].slice(0, input.maxResults), requestsUsed, budgetHit };
   }
 
   private async request(body: Record<string, unknown>, attempt = 0): Promise<{ places?: Place[]; nextPageToken?: string }> {

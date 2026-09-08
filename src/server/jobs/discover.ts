@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { INDUSTRY_MAP, COUNTRIES } from "@/lib/industries";
 import type { ScanFilters } from "@/lib/types";
 import { geocode } from "@/server/providers/geocode";
-import { selectProviders } from "@/server/providers";
+import { planProviders } from "@/server/providers";
 import { normalizeAddress, normalizeName, normalizePhone, normalizeWebsite } from "@/server/providers/normalize";
 import type { RawBusiness } from "@/server/providers/types";
 import { scoreProspect } from "@/server/scoring/engine";
@@ -39,23 +39,25 @@ export async function runScanDiscovery(scanId: string) {
     // 2. Discover via providers
     const industry = scan.industryKey ? INDUSTRY_MAP.get(scan.industryKey) ?? null : null;
     const language = COUNTRIES.find((c) => c.code === scan.countryCode)?.lang === "nl" ? "nl" : "en";
-    const providers = selectProviders();
+    const plan = await planProviders();
     const raw: RawBusiness[] = [];
     const used: string[] = [];
-    for (const provider of providers) {
+    let providerNote = plan.note;
+    for (const provider of plan.providers) {
       try {
-        const found = await provider.search(
-          { query: scan.query, industry, center: { lat, lng }, radiusKm: scan.radiusKm, countryCode: scan.countryCode, language, maxResults: scan.maxResults, locationLabel },
+        const result = await provider.search(
+          { query: scan.query, industry, center: { lat, lng }, radiusKm: scan.radiusKm, countryCode: scan.countryCode, language, maxResults: scan.maxResults, locationLabel, requestBudget: plan.requestBudget },
           (msg) => prisma.scan.update({ where: { id: scanId }, data: { stage: `${STAGES.search} · ${msg}` } }).catch(() => {}),
         );
-        raw.push(...found);
+        raw.push(...result.businesses);
         used.push(provider.key);
+        if (result.budgetHit) providerNote = `Google Places monthly budget reached after ${result.requestsUsed} request(s); results may be incomplete. Raise the budget in Settings or wait for the monthly reset.`;
       } catch (err) {
         console.error(`[discover] provider ${provider.key} failed`, err);
-        if (providers.length === 1) throw err;
+        if (plan.providers.length === 1) throw err;
       }
     }
-    await prisma.scan.update({ where: { id: scanId }, data: { providers: used, stage: STAGES.websites } });
+    await prisma.scan.update({ where: { id: scanId }, data: { providers: used, providerNote, stage: STAGES.websites } });
 
     // 3. Normalise + apply discovery filters
     const candidates = raw

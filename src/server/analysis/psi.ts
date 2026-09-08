@@ -1,5 +1,6 @@
 import { env } from "@/lib/env";
 import type { PsiResult } from "./types";
+import { recordUsage } from "@/server/providers/usage";
 
 const ENDPOINT = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed";
 const AUDITS_OF_INTEREST = ["largest-contentful-paint", "cumulative-layout-shift", "total-blocking-time", "first-contentful-paint", "speed-index", "uses-optimized-images", "modern-image-formats", "uses-responsive-images", "offscreen-images", "render-blocking-resources", "unused-javascript", "total-byte-weight", "tap-targets", "font-size", "viewport", "is-crawlable", "document-title", "meta-description", "image-alt", "link-text", "errors-in-console", "is-on-https", "color-contrast", "server-response-time"];
@@ -23,6 +24,7 @@ export async function runPageSpeed(url: string, strategy: "mobile" | "desktop", 
   let res: Response;
   try {
     res = await fetch(u, { signal: AbortSignal.timeout(90_000) });
+    await recordUsage("pagespeed").catch(() => {});
   } catch (err) {
     return { ...empty(strategy), error: `PSI request failed: ${(err as Error).message}` };
   }

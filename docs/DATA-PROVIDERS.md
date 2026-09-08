@@ -46,6 +46,20 @@ countryCode, language, maxResults }.
   Prospects krijgen `source = "overpass"`; de UI toont dat ratings ontbreken.
 - Beleid: ≤ 1 query per scan, 30 s pauze bij 429/406.
 
+### Budgetbewaking (gratis blijven)
+- Elke Google Places Text Search-aanvraag wordt geteld in `ApiUsage` (per
+  kalendermaand, UTC). Geocoding en PageSpeed worden ook geteld, maar alleen
+  ter informatie.
+- `UserSettings.googleMonthlyBudget` (default 900, onder Googles gratis
+  maandhoeveelheid van ~1.000 voor de Enterprise-SKU) begrenst het aantal
+  aanvragen. `planProviders()` kiest Google zolang er ≥ 3 aanvragen over zijn;
+  daarna OpenStreetMap (`googleBudgetFallback = true`) of een duidelijke fout.
+- Een scan die halverwege het budget raakt, stopt met pagineren en zet een
+  `providerNote` op de scan die in de UI wordt getoond.
+- Settings toont verbruik, resterend budget en de resetdatum; Find Prospects
+  toont het resterende aantal vóór een scan.
+- Stel in de Google Cloud Console óók een dagquotum in als tweede vangnet.
+
 ### Geocoding
 - Met Google key: Geocoding API (`region` = land).
 - Zonder: Nominatim (`https://nominatim.openstreetmap.org/search`, 1 req/s,

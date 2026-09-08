@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Search, Info, Sparkles } from "lucide-react";
 import { INDUSTRIES, COUNTRIES } from "@/lib/industries";
@@ -29,10 +30,12 @@ type Preset = {
 export function FindProspectsForm({
   defaultCountry,
   providers,
+  budget,
   preset,
 }: {
   defaultCountry: string;
   providers: { googlePlaces: boolean; pagespeed: boolean; ai: boolean };
+  budget?: { used: number; budget: number; remaining: number; fallback: boolean; resetsInDays: number } | null;
   preset?: Preset;
 }) {
   const router = useRouter();
@@ -88,6 +91,19 @@ export function FindProspectsForm({
             ratings or review counts. Add <code className="rounded-md bg-card px-1.5 font-mono text-[12px]">GOOGLE_PLACES_API_KEY</code> in{" "}
             <code className="rounded-md bg-card px-1.5 font-mono text-[12px]">.env</code> for full data.
           </div>
+        </div>
+      )}
+
+      {providers.googlePlaces && budget && (
+        <div className={cn("flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-[13.5px]", budget.remaining < 3 ? "border-tint-orange/60 bg-tint-orange/14" : "border-border bg-card")}>
+          <div>
+            <span className="font-medium">Google Places budget:</span> {budget.used} of {budget.budget} requests used this month
+            {budget.remaining < 3 ? (budget.fallback ? " · scans use OpenStreetMap until the reset" : " · scans are paused until the reset") : ` · about ${budget.remaining * 20} more businesses with full data`}
+            <span className="text-muted-foreground"> · resets in {budget.resetsInDays} day{budget.resetsInDays === 1 ? "" : "s"}</span>
+          </div>
+          <Link href="/settings" className="text-[13px] font-medium text-brand hover:underline">
+            Change budget
+          </Link>
         </div>
       )}
 

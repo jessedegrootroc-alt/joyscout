@@ -1,4 +1,4 @@
-import type { BusinessProvider, DiscoveryInput, RawBusiness } from "./types";
+import type { BusinessProvider, DiscoveryInput, RawBusiness, SearchResult } from "./types";
 import { haversineKm } from "./types";
 
 const ENDPOINTS = ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter"];
@@ -17,7 +17,7 @@ export class OverpassProvider implements BusinessProvider {
     return true;
   }
 
-  async search(input: DiscoveryInput, onProgress?: (msg: string) => void): Promise<RawBusiness[]> {
+  async search(input: DiscoveryInput, onProgress?: (msg: string) => void): Promise<SearchResult> {
     const radiusM = Math.min(50_000, Math.max(500, input.radiusKm * 1000));
     const around = `(around:${radiusM},${input.center.lat},${input.center.lng})`;
     // Predefined industries: fast tag selectors. Custom terms: server-side name
@@ -101,7 +101,7 @@ export class OverpassProvider implements BusinessProvider {
           });
           if (out.length >= input.maxResults) break;
         }
-        return out;
+        return { businesses: out, requestsUsed: 0, budgetHit: false };
       } catch (err) {
         lastErr = err as Error;
       }

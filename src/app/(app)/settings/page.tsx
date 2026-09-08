@@ -4,6 +4,7 @@ import { integrationStatus } from "@/lib/env";
 import { PageHeader } from "@/components/page-header";
 import { SettingsForm } from "@/components/settings-form";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { getGoogleBudget, getMonthUsage } from "@/server/providers/usage";
 
 export const metadata = { title: "Settings" };
 
@@ -11,6 +12,7 @@ export default async function SettingsPage() {
   const user = await requireUser();
   const settings = await prisma.userSettings.findUnique({ where: { userId: user.id } });
   const status = integrationStatus();
+  const [budget, geocodingUsed, pagespeedUsed] = await Promise.all([getGoogleBudget(), getMonthUsage("google_geocoding"), getMonthUsage("pagespeed")]);
   const rows = [
     { label: "Google Places API", ok: status.googlePlaces, env: "GOOGLE_PLACES_API_KEY", note: status.googlePlaces ? "Business discovery with ratings and reviews." : "Falls back to OpenStreetMap (no ratings/reviews, fewer results)." },
     { label: "PageSpeed Insights", ok: status.pagespeed, env: "PAGESPEED_API_KEY", note: status.pagespeed ? "Mobile + desktop Lighthouse runs." : "Works without a key at a very low quota; desktop run skipped." },
@@ -49,7 +51,10 @@ export default async function SettingsPage() {
             defaultCountry: settings?.defaultCountry ?? "NL",
             signature: settings?.signature ?? "",
             aiMinOpportunity: settings?.aiMinOpportunity ?? 40,
+            googleMonthlyBudget: settings?.googleMonthlyBudget ?? 900,
+            googleBudgetFallback: settings?.googleBudgetFallback ?? true,
           }}
+          usage={{ googlePlaces: budget.used, googleGeocoding: geocodingUsed, pagespeed: pagespeedUsed, resetsInDays: budget.resetsInDays, googleConfigured: status.googlePlaces }}
         />
       </div>
     </div>

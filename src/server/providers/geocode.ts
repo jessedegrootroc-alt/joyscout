@@ -1,5 +1,6 @@
 import { env } from "@/lib/env";
 import type { GeoPoint } from "./types";
+import { recordUsage } from "./usage";
 
 export type GeocodeResult = GeoPoint & { label: string; city?: string; region?: string; provider: "google" | "nominatim" };
 
@@ -20,6 +21,7 @@ async function geocodeGoogle(location: string, countryCode: string): Promise<Geo
   url.searchParams.set("components", `country:${countryCode}`);
   url.searchParams.set("key", env.googlePlacesKey);
   const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+  await recordUsage("google_geocoding").catch(() => {});
   if (!res.ok) throw new Error(`Geocoding HTTP ${res.status}`);
   const data = (await res.json()) as { status: string; results: Array<{ formatted_address: string; geometry: { location: { lat: number; lng: number } }; address_components: Array<{ long_name: string; types: string[] }> }> };
   if (data.status !== "OK" || !data.results?.length) return null;

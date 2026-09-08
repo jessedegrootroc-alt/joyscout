@@ -10,9 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type Values = { companyName: string; senderName: string; senderRole: string; services: string[]; outreachLanguage: string; defaultCountry: string; signature: string; aiMinOpportunity: number };
+type Values = { companyName: string; senderName: string; senderRole: string; services: string[]; outreachLanguage: string; defaultCountry: string; signature: string; aiMinOpportunity: number; googleMonthlyBudget: number; googleBudgetFallback: boolean };
+type Usage = { googlePlaces: number; googleGeocoding: number; pagespeed: number; resetsInDays: number; googleConfigured: boolean };
 
-export function SettingsForm({ initial }: { initial: Values }) {
+export function SettingsForm({ initial, usage }: { initial: Values; usage: Usage }) {
   const router = useRouter();
   const [v, setV] = useState(initial);
   const [servicesText, setServicesText] = useState(initial.services.join(", "));
@@ -29,7 +30,61 @@ export function SettingsForm({ initial }: { initial: Values }) {
     toast.success("Settings saved");
     router.refresh();
   }
+  const pct = initial.googleMonthlyBudget > 0 ? Math.min(100, Math.round((usage.googlePlaces / initial.googleMonthlyBudget) * 100)) : 100;
   return (
+    <>
+    <section className="surface p-6">
+      <h2 className="mb-1 text-[17px] font-medium tracking-tight">API budget</h2>
+      <p className="mb-5 text-[13.5px] text-muted-foreground">Google gives every paid tier a free monthly allowance. Keep the budget under that allowance and Joyscrape never spends money: when it is reached, scans switch to OpenStreetMap.</p>
+      <div className="grid gap-5 sm:grid-cols-2 [&_label]:eyebrow">
+        <div className="space-y-2 sm:col-span-2">
+          <div className="flex items-center justify-between">
+            <span className="eyebrow">Google Places requests this month</span>
+            <span className="font-mono text-[12px] tabular-nums text-muted-foreground">
+              {usage.googlePlaces} / {v.googleMonthlyBudget} · resets in {usage.resetsInDays} day{usage.resetsInDays === 1 ? "" : "s"}
+            </span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-foreground/8">
+            <div className={`h-full rounded-full transition-[width] duration-700 ${pct >= 100 ? "bg-destructive" : pct >= 80 ? "bg-tint-orange" : "bg-primary"}`} style={{ width: `${pct}%` }} />
+          </div>
+          {!usage.googleConfigured && <p className="text-[12.5px] text-muted-foreground">Google Places is not configured, so no requests are being made yet.</p>}
+        </div>
+        <div className="space-y-1">
+          <Label>Monthly budget (Text Search requests)</Label>
+          <Input type="number" min={0} value={v.googleMonthlyBudget} onChange={(e) => setV({ ...v, googleMonthlyBudget: Math.max(0, Number(e.target.value) || 0) })} />
+          <p className="text-[12.5px] text-muted-foreground">Each request returns up to 20 businesses. Google&apos;s free allowance for this tier is about 1,000 per month; 900 keeps a margin.</p>
+        </div>
+        <div className="space-y-1">
+          <Label>When the budget is reached</Label>
+          <Select value={v.googleBudgetFallback ? "fallback" : "stop"} onValueChange={(x) => setV({ ...v, googleBudgetFallback: x === "fallback" })}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="fallback">Switch to OpenStreetMap (free, no ratings)</SelectItem>
+              <SelectItem value="stop">Stop scans until the budget resets</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-2 text-[12.5px] text-muted-foreground sm:col-span-2 sm:grid-cols-2">
+          <div className="rounded-2xl border border-border px-4 py-3">
+            <div className="eyebrow">Geocoding requests</div>
+            <div className="mt-1 font-mono text-[15px] font-medium text-foreground">{usage.googleGeocoding}</div>
+            <div>Free allowance is far higher; not budgeted.</div>
+          </div>
+          <div className="rounded-2xl border border-border px-4 py-3">
+            <div className="eyebrow">PageSpeed requests</div>
+            <div className="mt-1 font-mono text-[15px] font-medium text-foreground">{usage.pagespeed}</div>
+            <div>Free API; tracked for insight only.</div>
+          </div>
+        </div>
+      </div>
+      <div className="mt-6 flex justify-end">
+        <Button onClick={save} disabled={busy}>
+          {busy ? "Saving…" : "Save budget"}
+        </Button>
+      </div>
+    </section>
     <section className="surface p-6">
       <h2 className="mb-1 text-[17px] font-medium tracking-tight">Outreach sender</h2>
       <p className="mb-5 text-[13.5px] text-muted-foreground">Used to sign every generated message.</p>
@@ -95,5 +150,6 @@ export function SettingsForm({ initial }: { initial: Values }) {
         </Button>
       </div>
     </section>
+    </>
   );
 }

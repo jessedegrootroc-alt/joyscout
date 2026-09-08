@@ -21,6 +21,7 @@ type ScanDTO = {
   stage: string;
   error: string | null;
   providers: string[];
+  providerNote?: string | null;
   totalFound: number;
   totalNew: number;
   totalDuplicates: number;
@@ -175,6 +176,7 @@ export function ScanLiveView({
             );
           })}
         </ol>
+        {scan.providerNote && <p className="mt-3 rounded-xl bg-tint-yellow/22 px-3.5 py-2 text-[13px]">{scan.providerNote}</p>}
         {active && <p className="mt-3 text-[13px] text-muted-foreground">You can leave this page. Results are saved and appear under Scrapes when ready.</p>}
       </section>
 

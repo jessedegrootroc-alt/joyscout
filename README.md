@@ -41,7 +41,7 @@ There is no login: the app is a single workspace. Start at **Find Prospects**.
 |---|---|---|
 | `DATABASE_URL` | yes | PostgreSQL connection string (app + worker + pg-boss) |
 | `NEXT_PUBLIC_APP_URL` | yes | Public URL of the app |
-| `GOOGLE_PLACES_API_KEY` | recommended | Places API (New) Text Search + Geocoding API. Without it, discovery falls back to OpenStreetMap (no ratings/reviews, fewer results). |
+| `GOOGLE_PLACES_API_KEY` | recommended | Places API (New) Text Search + Geocoding API. Without it, discovery falls back to OpenStreetMap (no ratings/reviews, fewer results). Usage is capped by the monthly budget in Settings (default 900 requests, under Google's free allowance); when reached, scans fall back to OpenStreetMap. |
 | `PAGESPEED_API_KEY` | recommended | PageSpeed Insights quota. Without a key only the mobile run is attempted and 429s are skipped (performance is then derived from own timings). |
 | `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` | optional | Enables AI website analysis, outreach and follow-up generation. `AI_PROVIDER` / `AI_MODEL` override the defaults (`claude-opus-5` / `gpt-4o-mini`). |
 | `ANALYZE_CONCURRENCY` | optional | Parallel website audits in the worker (default 3) |

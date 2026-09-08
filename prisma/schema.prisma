@@ -17,13 +17,13 @@ datasource db {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model User {
-  id            String    @id
+  id            String   @id
   name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
+  email         String   @unique
+  emailVerified Boolean  @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   settings      UserSettings?
   scans         Scan[]
@@ -43,19 +43,24 @@ model User {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model UserSettings {
-  userId           String   @id
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyName      String?
-  senderName       String?
-  senderRole       String?
-  services         String[] @default([])
-  outreachLanguage String   @default("en")
-  defaultCountry   String   @default("NL")
-  signature        String?
+  userId               String   @id
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName          String?
+  senderName           String?
+  senderRole           String?
+  services             String[] @default([])
+  outreachLanguage     String   @default("en")
+  defaultCountry       String   @default("NL")
+  signature            String?
   /// Prospects with a pre-AI opportunity score below this threshold skip the
   /// (paid) AI analysis. Cost control, see docs/SCORING.md.
-  aiMinOpportunity Int      @default(40)
-  updatedAt        DateTime @updatedAt
+  aiMinOpportunity     Int      @default(40)
+  /// Max Google Places (New) Text Search requests per calendar month. Google\'s free monthly
+  /// allowance for the Enterprise SKU is ~1,000; 900 keeps a margin.
+  googleMonthlyBudget  Int      @default(900)
+  /// When the budget is reached, fall back to OpenStreetMap instead of failing.
+  googleBudgetFallback Boolean  @default(true)
+  updatedAt            DateTime @updatedAt
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -71,28 +76,30 @@ enum ScanStatus {
 }
 
 model Scan {
-  id          String     @id @default(cuid())
-  userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
   /// Free-text industry / search term as entered ("Dakdekkers")
-  query       String
+  query        String
   /// Key of a predefined industry (see src/lib/industries.ts) or null for custom
-  industryKey String?
-  location    String
-  countryCode String     @default("NL")
-  lat         Float?
-  lng         Float?
-  radiusKm    Int        @default(25)
-  maxResults  Int        @default(60)
+  industryKey  String?
+  location     String
+  countryCode  String     @default("NL")
+  lat          Float?
+  lng          Float?
+  radiusKm     Int        @default(25)
+  maxResults   Int        @default(60)
   /// Discovery + result filters, see ScanFilters in src/lib/types.ts
-  filters     Json       @default("{}")
+  filters      Json       @default("{}")
   /// Data providers used, e.g. ["google_places"] or ["overpass"]
-  providers   String[]   @default([])
-  status      ScanStatus @default(QUEUED)
+  providers    String[]   @default([])
+  /// Explanation when a provider was skipped or cut short (e.g. Google budget reached)
+  providerNote String?
+  status       ScanStatus @default(QUEUED)
   /// Human readable pipeline stage for the progress UI
-  stage       String     @default("Queued")
-  error       String?
+  stage        String     @default("Queued")
+  error        String?
 
   totalFound      Int @default(0)
   totalNew        Int @default(0)
@@ -384,13 +391,13 @@ model WebsiteAnalysis {
   ageVerdict String   @default("unknown")
 
   /// [{ key, label, category, passed, value?, source }]
-  checks   Json @default("[]")
+  checks   Json  @default("[]")
   /// [{ key, label, severity, category, source, detail? }]
-  issues   Json @default("[]")
+  issues   Json  @default("[]")
   /// Full scoring breakdown incl. weights, see src/lib/scoring
-  scores   Json @default("{}")
+  scores   Json  @default("{}")
   /// [{ key, text, severity, source }]
-  insights Json @default("[]")
+  insights Json  @default("[]")
   /// Raw audit data (without HTML) so scores can be recomputed without re-crawling (scripts/rescore.mts)
   rawAudit Json?
 
@@ -578,4 +585,17 @@ model Radar {
 
   @@index([userId])
   @@index([isActive, nextRunAt])
+}
+
+/// Monthly counters for paid external APIs (workspace-wide, keyed per month).
+model ApiUsage {
+  id        String   @id @default(cuid())
+  /// "google_places" | "google_geocoding" | "pagespeed"
+  provider  String
+  /// "YYYY-MM"
+  month     String
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, month])
 }
