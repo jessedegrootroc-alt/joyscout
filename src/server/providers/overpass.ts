@@ -2,7 +2,7 @@ import type { BusinessProvider, DiscoveryInput, RawBusiness } from "./types";
 import { haversineKm } from "./types";
 
 const ENDPOINTS = ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter"];
-const UA = "LeadLens/0.1 (prospecting tool; contact via app operator)";
+const UA = "Joyscrape/0.1 (prospecting tool; contact via app operator)";
 
 type Element = { type: string; id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> };
 

@@ -3,7 +3,7 @@ import type { GeoPoint } from "./types";
 
 export type GeocodeResult = GeoPoint & { label: string; city?: string; region?: string; provider: "google" | "nominatim" };
 
-const UA = "LeadLens/0.1 (prospecting tool; contact via app operator)";
+const UA = "Joyscrape/0.1 (prospecting tool; contact via app operator)";
 
 export async function geocode(location: string, countryCode: string): Promise<GeocodeResult | null> {
   if (env.googlePlacesKey) {

@@ -1,6 +1,6 @@
-# LeadLens – Architectuur (Fase 1)
+# Joyscrape – Architectuur (Fase 1)
 
-LeadLens vindt lokale bedrijven, analyseert hun website, kwalificeert ze als
+Joyscrape vindt lokale bedrijven, analyseert hun website, kwalificeert ze als
 prospect voor webdesign/SEO/conversion-werk en bereidt outreach voor.
 Dit document beschrijft informatie-architectuur, user flows, technische
 architectuur en de scan-pipeline. Zie ook:

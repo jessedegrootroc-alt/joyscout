@@ -48,7 +48,7 @@ export function BulkActionsBar({ ids, lists, onDone }: { ids: string[]; lists: {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `leadlens-prospects-${new Date().toISOString().slice(0, 10)}.${format}`;
+      a.download = `joyscrape-prospects-${new Date().toISOString().slice(0, 10)}.${format}`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success(`Exported ${ids.length} prospects as ${format.toUpperCase()}`);

@@ -102,11 +102,11 @@ export async function buildExport(userId: string, ids: string[], format: "xlsx" 
     for (const r of rows) lines.push(EXPORT_COLUMNS.map((c) => esc((r as Record<string, unknown>)[c.key])).join(","));
     // BOM so Excel opens UTF-8 correctly
     const buffer = Buffer.from("\uFEFF" + lines.join("\r\n"), "utf8");
-    return { buffer, contentType: "text/csv; charset=utf-8", filename: `leadlens-prospects-${date}.csv` };
+    return { buffer, contentType: "text/csv; charset=utf-8", filename: `joyscrape-prospects-${date}.csv` };
   }
 
   const wb = new ExcelJS.Workbook();
-  wb.creator = "LeadLens";
+  wb.creator = "Joyscrape";
   wb.created = new Date();
   const ws = wb.addWorksheet("Prospects", { views: [{ state: "frozen", ySplit: 1 }] });
   ws.columns = EXPORT_COLUMNS.map((c) => ({ header: c.header, key: c.key, width: c.width }));
@@ -132,5 +132,5 @@ export async function buildExport(userId: string, ids: string[], format: "xlsx" 
     }
   }
   const buffer = Buffer.from(await wb.xlsx.writeBuffer());
-  return { buffer, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename: `leadlens-prospects-${date}.xlsx` };
+  return { buffer, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename: `joyscrape-prospects-${date}.xlsx` };
 }

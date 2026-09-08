@@ -1,4 +1,4 @@
-# LeadLens
+# Joyscrape
 
 Find local businesses with an underperforming online presence, analyse their
 websites, qualify them as prospects and prepare personalised outreach.
@@ -22,7 +22,7 @@ Docs: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/DATA-PROVIDERS.md`]
 ```bash
 cp .env.example .env          # fill in DATABASE_URL and API keys
 npm install                   # also runs `prisma generate`
-createdb leadlens             # if the database does not exist yet
+createdb joyscrape             # if the database does not exist yet
 npx prisma migrate dev        # creates the schema
 ```
 

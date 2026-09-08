@@ -15,7 +15,7 @@ export default async function RadarPage() {
   ]);
   return (
     <div className="mx-auto max-w-[1200px]">
-      <PageHeader eyebrow="Automation" title="Prospect Radar" description="Pick an industry, a location and filters. LeadLens scans on your cadence and drops new prospects into a list. Duplicates are skipped." actions={<RadarForm lists={lists} defaultCountry={settings?.defaultCountry ?? "NL"} />} />
+      <PageHeader eyebrow="Automation" title="Prospect Radar" description="Pick an industry, a location and filters. Joyscrape scans on your cadence and drops new prospects into a list. Duplicates are skipped." actions={<RadarForm lists={lists} defaultCountry={settings?.defaultCountry ?? "NL"} />} />
       <RadarList radars={JSON.parse(JSON.stringify(radars))} />
     </div>
   );

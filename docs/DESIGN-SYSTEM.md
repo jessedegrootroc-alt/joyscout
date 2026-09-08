@@ -1,4 +1,4 @@
-# LeadLens design system (Webjoy-richting)
+# Joyscrape design system (Webjoy-richting)
 
 Bron: de Webjoy-site (site.css + HTML). Gebruikt als designrichting, niet gekopieerd:
 geen Webjoy-copy, -logo's, -smileys of -klantcontent. Alle tokens staan in

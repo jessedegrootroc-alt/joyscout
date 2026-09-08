@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/70 bg-background/75 px-5 backdrop-blur-md md:px-8">
           <MobileNav />
-          <Link href="/" className="md:hidden" aria-label="LeadLens, dashboard">
+          <Link href="/" className="md:hidden" aria-label="Joyscrape, dashboard">
             <Logo compact />
           </Link>
           <GlobalSearch />

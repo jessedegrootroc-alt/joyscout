@@ -42,7 +42,7 @@ export function AppSidebar({ counts }: { counts?: { followUpsDue?: number } }) {
   return (
     <aside className="hidden w-[248px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
       <div className="flex h-16 items-center px-6">
-        <Link href="/" aria-label="LeadLens, dashboard">
+        <Link href="/" aria-label="Joyscrape, dashboard">
           <Logo />
         </Link>
       </div>

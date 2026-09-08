@@ -1,14 +1,14 @@
 import { prisma } from "./prisma";
 
 /**
- * LeadLens runs as a single workspace without login. Every record is still
+ * Joyscrape runs as a single workspace without login. Every record is still
  * scoped to a user row so multi-user support can be re-enabled later; here that
  * row is the workspace owner (the first user ever created, or a default one).
  */
 export type AuthedUser = { id: string; email: string; name: string };
 
 export const DEFAULT_WORKSPACE_NAME = "Workspace";
-const DEFAULT_EMAIL = "owner@leadlens.local";
+const DEFAULT_EMAIL = "owner@joyscrape.local";
 
 let cached: AuthedUser | null = null;
 

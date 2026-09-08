@@ -8,7 +8,7 @@ const mono = JetBrains_Mono({ variable: "--font-mono", subsets: ["latin"], weigh
 const hand = Caveat({ variable: "--font-hand", subsets: ["latin"], weight: ["600"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: { default: "LeadLens", template: "%s · LeadLens" },
+  title: { default: "Joyscrape", template: "%s · Joyscrape" },
   description: "Find local businesses with an underperforming online presence.",
 };
 

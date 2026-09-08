@@ -1,6 +1,6 @@
 import type { HttpProbe, FetchOutcome } from "./types";
 
-const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 LeadLensBot/0.1";
+const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 JoyscrapeBot/0.1";
 
 /** Plain HTTP probe: follows redirects manually to record the chain, detects SSL errors and http→https upgrade. */
 export async function probeUrl(inputUrl: string): Promise<HttpProbe> {

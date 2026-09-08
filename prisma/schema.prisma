@@ -1,4 +1,4 @@
-// LeadLens – Prisma schema
+// Joyscrape – Prisma schema
 // Ownership model: every business object carries a userId; all queries are
 // scoped to the workspace owner (see src/lib/auth-guard.ts).
 

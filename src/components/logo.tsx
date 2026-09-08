@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-/** LeadLens wordmark: a warm circular lens mark + medium-weight wordmark. */
+/** Joyscrape wordmark: a warm circular lens mark + medium-weight wordmark. */
 export function Logo({ className, compact = false, size = "md" }: { className?: string; compact?: boolean; size?: "md" | "lg" }) {
   const mark = size === "lg" ? "size-9" : "size-7";
   return (
@@ -12,7 +12,7 @@ export function Logo({ className, compact = false, size = "md" }: { className?: 
         </svg>
         <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-background bg-brand" aria-hidden="true" />
       </span>
-      {!compact && <span className={size === "lg" ? "text-[22px]" : "text-[17px]"}>LeadLens</span>}
+      {!compact && <span className={size === "lg" ? "text-[22px]" : "text-[17px]"}>Joyscrape</span>}
     </div>
   );
 }

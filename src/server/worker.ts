@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
 
 /**
- * LeadLens background worker. Run alongside `next dev` / `next start`:
+ * Joyscrape background worker. Run alongside `next dev` / `next start`:
  *   npm run worker
  */
 async function main() {

@@ -28,7 +28,7 @@ export async function getBoss(): Promise<PgBoss> {
       connectionString: url,
       schema: "pgboss",
       max: 5,
-      application_name: "leadlens",
+      application_name: "joyscrape",
     });
     boss.on("error", (err) => console.error("[pg-boss]", err));
     await boss.start();
