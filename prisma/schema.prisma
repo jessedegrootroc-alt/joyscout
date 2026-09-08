@@ -1,0 +1,630 @@
+// LeadLens – Prisma schema
+// Ownership model: every business object carries a userId; all queries are
+// scoped by the authenticated user (see src/lib/auth-guard.ts).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Auth (Better Auth core schema)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+
+  settings      UserSettings?
+  scans         Scan[]
+  prospects     Prospect[]
+  notes         Note[]
+  activities    Activity[]
+  lists         List[]
+  outreach      OutreachMessage[]
+  savedSearches SavedSearch[]
+  radars        Radar[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// User settings (used by outreach generation + defaults)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model UserSettings {
+  userId           String   @id
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName      String?
+  senderName       String?
+  senderRole       String?
+  services         String[] @default([])
+  outreachLanguage String   @default("en")
+  defaultCountry   String   @default("NL")
+  signature        String?
+  /// Prospects with a pre-AI opportunity score below this threshold skip the
+  /// (paid) AI analysis. Cost control, see docs/SCORING.md.
+  aiMinOpportunity Int      @default(40)
+  updatedAt        DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Scans (a "Find prospects" run) and its pipeline items
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ScanStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model Scan {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  /// Free-text industry / search term as entered ("Dakdekkers")
+  query       String
+  /// Key of a predefined industry (see src/lib/industries.ts) or null for custom
+  industryKey String?
+  location    String
+  countryCode String     @default("NL")
+  lat         Float?
+  lng         Float?
+  radiusKm    Int        @default(25)
+  maxResults  Int        @default(60)
+  /// Discovery + result filters, see ScanFilters in src/lib/types.ts
+  filters     Json       @default("{}")
+  /// Data providers used, e.g. ["google_places"] or ["overpass"]
+  providers   String[]   @default([])
+  status      ScanStatus @default(QUEUED)
+  /// Human readable pipeline stage for the progress UI
+  stage       String     @default("Queued")
+  error       String?
+
+  totalFound      Int @default(0)
+  totalNew        Int @default(0)
+  totalDuplicates Int @default(0)
+  analyzedCount   Int @default(0)
+  failedCount     Int @default(0)
+  noWebsiteCount  Int @default(0)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  savedSearchId String?
+  savedSearch   SavedSearch? @relation(fields: [savedSearchId], references: [id], onDelete: SetNull)
+  radarId       String?
+  radar         Radar?       @relation(fields: [radarId], references: [id], onDelete: SetNull)
+
+  items ScanProspect[]
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+enum AnalysisStatus {
+  PENDING
+  ANALYZING
+  COMPLETED
+  FAILED
+  NO_WEBSITE
+  SKIPPED
+}
+
+/// Join between a scan and the prospects it surfaced. A prospect can appear in
+/// many scans (duplicate detection keeps a single Prospect row per business).
+model ScanProspect {
+  id         String         @id @default(cuid())
+  scanId     String
+  scan       Scan           @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  prospectId String
+  prospect   Prospect       @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  status     AnalysisStatus @default(PENDING)
+  stage      String?
+  error      String?
+  /// True when this scan created the Prospect row (vs. matched an existing one)
+  isNew      Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@unique([scanId, prospectId])
+  @@index([prospectId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Prospects (businesses) – the core entity
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum LeadStatus {
+  NEW
+  QUALIFIED
+  CONTACTED
+  REPLIED
+  FOLLOW_UP
+  MEETING_BOOKED
+  WON
+  LOST
+  NOT_INTERESTED
+}
+
+model Prospect {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  industry    String
+  industryKey String?
+
+  website    String?
+  domain     String?
+  hasWebsite Boolean @default(false)
+
+  phone           String?
+  phoneNormalized String?
+  email           String?
+  /// Where the email came from: "website" | "osm" | "manual"
+  emailSource     String?
+
+  address     String?
+  street      String?
+  postalCode  String?
+  city        String?
+  region      String?
+  countryCode String?
+  lat         Float?
+  lng         Float?
+
+  googlePlaceId     String?
+  googleMapsUrl     String?
+  googleRating      Float?
+  googleReviewCount Int?
+  businessStatus    String?
+  googleTypes       String[] @default([])
+  /// { facebook?, instagram?, linkedin?, twitter?, youtube?, tiktok? }
+  socialLinks       Json?
+
+  /// "google_places" | "overpass"
+  source    String
+  sourceRef String?
+
+  // Denormalised scores from the latest WebsiteAnalysis (for table + filters)
+  websiteScore     Int?
+  designScore      Int?
+  uxScore          Int?
+  seoScore         Int?
+  performanceScore Int?
+  conversionScore  Int?
+  mobileScore      Int?
+  technicalScore   Int?
+  opportunityScore Int?
+
+  platform           String?
+  recommendedService String?
+  priorityLabels     String[] @default([])
+  insights           String[] @default([])
+  /// Issue keys for filtering, e.g. "no_ssl", "no_cta", "no_meta_description"
+  issueKeys          String[] @default([])
+  ageVerdict         String?
+
+  analysisStatus AnalysisStatus @default(PENDING)
+  analysisError  String?
+  lastAnalyzedAt DateTime?
+
+  // Mini-CRM
+  status         LeadStatus @default(NEW)
+  contactedAt    DateTime?
+  followUpAt     DateTime?
+  lastActivityAt DateTime?
+
+  dateFound DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  analysis   WebsiteAnalysis?
+  notes      Note[]
+  activities Activity[]
+  outreach   OutreachMessage[]
+  lists      ListProspect[]
+  scans      ScanProspect[]
+
+  @@unique([userId, googlePlaceId])
+  @@index([userId, opportunityScore])
+  @@index([userId, websiteScore])
+  @@index([userId, domain])
+  @@index([userId, phoneNormalized])
+  @@index([userId, status])
+  @@index([userId, city])
+  @@index([userId, followUpAt])
+  @@index([userId, dateFound])
+}
+
+/// Full website audit for a prospect (latest run). Raw + derived data live here;
+/// the Prospect row only carries denormalised scores.
+model WebsiteAnalysis {
+  id         String   @id @default(cuid())
+  prospectId String   @unique
+  prospect   Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+
+  url        String
+  finalUrl   String?
+  domain     String?
+  fetchedAt  DateTime @default(now())
+  durationMs Int?
+
+  // Fetch / transport
+  httpStatus     Int?
+  isHttps        Boolean @default(false)
+  httpsRedirects Boolean @default(false)
+  redirectCount  Int     @default(0)
+  sslError       String?
+  responseTimeMs Int?
+  htmlBytes      Int?
+  fetchError     String?
+  /// "ok" | "offline" | "timeout" | "blocked" | "captcha" | "ssl_error" | "error"
+  fetchOutcome   String  @default("ok")
+
+  // Screenshots (paths relative to STORAGE_DIR)
+  screenshotDesktop String?
+  screenshotMobile  String?
+  screenshotFull    String?
+
+  // SEO
+  title                  String?
+  metaDescription        String?
+  h1                     String[] @default([])
+  headingOutline         Json?
+  canonical              String?
+  robotsTxtFound         Boolean?
+  sitemapFound           Boolean?
+  schemaTypes            String[] @default([])
+  hasLocalBusinessSchema Boolean  @default(false)
+  ogTags                 Json?
+  hasViewport            Boolean  @default(false)
+  imagesTotal            Int      @default(0)
+  imagesMissingAlt       Int      @default(0)
+  isIndexable            Boolean  @default(true)
+  lang                   String?
+  wordCount              Int      @default(0)
+  hasFavicon             Boolean  @default(false)
+
+  // Links
+  linksInternal Int      @default(0)
+  linksExternal Int      @default(0)
+  linksChecked  Int      @default(0)
+  linksBroken   Int      @default(0)
+  brokenLinks   String[] @default([])
+
+  // Conversion / UX (measured in the DOM)
+  ctaAboveFold     Boolean  @default(false)
+  ctaCount         Int      @default(0)
+  ctaTexts         String[] @default([])
+  hasContactForm   Boolean  @default(false)
+  phoneVisible     Boolean  @default(false)
+  emailVisible     Boolean  @default(false)
+  hasSocialProof   Boolean  @default(false)
+  hasReviewsWidget Boolean  @default(false)
+  hasPortfolio     Boolean  @default(false)
+  hasTrustSignals  Boolean  @default(false)
+  hasNav           Boolean  @default(false)
+  navLinks         Int      @default(0)
+  hasBookingFlow   Boolean  @default(false)
+  hasWhatsApp      Boolean  @default(false)
+  hasChat          Boolean  @default(false)
+  hasMapEmbed      Boolean  @default(false)
+  addressOnPage    Boolean  @default(false)
+  heroText         String?
+  copyrightYear    Int?
+  fontFamilies     String[] @default([])
+  usesWebFonts     Boolean  @default(false)
+  legacyMarkup     String[] @default([])
+
+  // Mobile (measured at 375px viewport)
+  mobileHorizontalOverflow Boolean?
+  mobileSmallTextRatio     Float?
+  mobileTapTargetIssues    Int?
+  mobileMenuPresent        Boolean?
+
+  // Technical (measured with Playwright)
+  jsErrors           Int      @default(0)
+  jsErrorSamples     String[] @default([])
+  mixedContent       Boolean  @default(false)
+  requestsCount      Int      @default(0)
+  totalTransferBytes Int?
+  domNodes           Int?
+  ttfbMs             Int?
+  domContentLoadedMs Int?
+  loadMs             Int?
+  failedRequests     Int      @default(0)
+
+  // Technology detection
+  cms          String?
+  framework    String?
+  analytics    String[] @default([])
+  pixels       String[] @default([])
+  hosting      String?
+  server       String?
+  jsLibraries  Json?
+  technologies Json?
+
+  // PageSpeed Insights (verified external data)
+  psiMobile             Json?
+  psiDesktop            Json?
+  psiPerformanceMobile  Int?
+  psiPerformanceDesktop Int?
+  psiAccessibility      Int?
+  psiBestPractices      Int?
+  psiSeo                Int?
+  psiError              String?
+  lcpMs                 Float?
+  cls                   Float?
+  tbtMs                 Float?
+  fcpMs                 Float?
+  speedIndexMs          Float?
+  cruxAvailable         Boolean @default(false)
+
+  // Website age indicators
+  ageSignals String[] @default([])
+  /// "likely_outdated" | "possibly_outdated" | "modern" | "unknown"
+  ageVerdict String   @default("unknown")
+
+  /// [{ key, label, category, passed, value?, source }]
+  checks   Json @default("[]")
+  /// [{ key, label, severity, category, source, detail? }]
+  issues   Json @default("[]")
+  /// Full scoring breakdown incl. weights, see src/lib/scoring
+  scores   Json @default("{}")
+  /// [{ key, text, severity, source }]
+  insights Json @default("[]")
+  /// Raw audit data (without HTML) so scores can be recomputed without re-crawling (scripts/rescore.mts)
+  rawAudit Json?
+
+  // AI analysis (qualitative; never produces scores except a bounded design impression)
+  /// "not_configured" | "skipped" | "completed" | "failed"
+  aiStatus             String    @default("not_configured")
+  aiModel              String?
+  aiSummary            String?
+  aiStrengths          Json?
+  aiIssues             Json?
+  aiOpportunities      Json?
+  aiRecommendedService String?
+  aiDesignImpression   Int?
+  aiError              String?
+  aiAnalyzedAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([domain, fetchedAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CRM: notes, activity, lists, outreach
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Note {
+  id         String   @id @default(cuid())
+  prospectId String
+  prospect   Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([prospectId, createdAt])
+}
+
+enum ActivityType {
+  DISCOVERED
+  ANALYZED
+  STATUS_CHANGED
+  NOTE_ADDED
+  OUTREACH_GENERATED
+  FOLLOW_UP_GENERATED
+  FOLLOW_UP_SCHEDULED
+  CONTACTED
+  LIST_ADDED
+  LIST_REMOVED
+  EXPORTED
+}
+
+model Activity {
+  id         String       @id @default(cuid())
+  prospectId String
+  prospect   Prospect     @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       ActivityType
+  message    String
+  metadata   Json?
+  createdAt  DateTime     @default(now())
+
+  @@index([prospectId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model List {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  color       String?
+  /// Created automatically by a Radar
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  prospects ListProspect[]
+  radars    Radar[]
+
+  @@unique([userId, name])
+}
+
+model ListProspect {
+  listId     String
+  list       List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  prospectId String
+  prospect   Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  addedAt    DateTime @default(now())
+
+  @@id([listId, prospectId])
+  @@index([prospectId])
+}
+
+enum OutreachChannel {
+  EMAIL
+  LINKEDIN
+  WHATSAPP
+  PHONE
+  INSTAGRAM
+}
+
+model OutreachMessage {
+  id                String            @id @default(cuid())
+  prospectId        String
+  prospect          Prospect          @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel           OutreachChannel
+  tone              String
+  length            String
+  subject           String?
+  body              String
+  isFollowUp        Boolean           @default(false)
+  followUpIndex     Int?
+  followUpAfterDays Int?
+  parentId          String?
+  parent            OutreachMessage?  @relation("FollowUps", fields: [parentId], references: [id], onDelete: SetNull)
+  followUps         OutreachMessage[] @relation("FollowUps")
+  model             String?
+  createdAt         DateTime          @default(now())
+
+  @@index([prospectId, createdAt])
+  @@index([userId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Saved searches + Radar automation
+// ─────────────────────────────────────────────────────────────────────────────
+
+model SavedSearch {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  /// ScanInput (query, location, radiusKm, countryCode, maxResults, filters)
+  params    Json
+  lastRunAt DateTime?
+  runCount  Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  scans Scan[]
+
+  @@index([userId, createdAt])
+}
+
+enum RadarFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+model Radar {
+  id                String         @id @default(cuid())
+  userId            String
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String
+  query             String
+  industryKey       String?
+  location          String
+  countryCode       String         @default("NL")
+  lat               Float?
+  lng               Float?
+  radiusKm          Int            @default(25)
+  maxResults        Int            @default(60)
+  /// ScanFilters incl. minOpportunityScore used to admit prospects into the list
+  filters           Json           @default("{}")
+  frequency         RadarFrequency @default(WEEKLY)
+  isActive          Boolean        @default(true)
+  listId            String
+  list              List           @relation(fields: [listId], references: [id], onDelete: Cascade)
+  lastRunAt         DateTime?
+  nextRunAt         DateTime?
+  runCount          Int            @default(0)
+  newProspectsTotal Int            @default(0)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  scans Scan[]
+
+  @@index([userId])
+  @@index([isActive, nextRunAt])
+}
