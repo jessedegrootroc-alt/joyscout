@@ -8,6 +8,7 @@ import { OpportunityBadge, ScoreBadge } from "@/components/score";
 import { StatusBadge } from "@/components/status-badge";
 import { fmtDate, fmtRelative } from "@/lib/format";
 import { LEAD_STATUS_LABEL, type LeadStatusKey } from "@/lib/types";
+import { DEFAULT_WORKSPACE_NAME } from "@/lib/auth-guard";
 
 export const metadata = { title: "Dashboard" };
 
@@ -53,6 +54,7 @@ export default async function DashboardPage() {
   const funnel: { key: LeadStatusKey; value: number }[] = (["NEW", "QUALIFIED", "CONTACTED", "REPLIED", "FOLLOW_UP", "MEETING_BOOKED", "WON", "LOST", "NOT_INTERESTED"] as LeadStatusKey[]).map((k) => ({ key: k, value: count(k) }));
   const funnelMax = Math.max(1, ...funnel.map((f) => f.value));
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 18 ? "Good afternoon" : "Good evening";
+  const firstName = user.name && user.name !== DEFAULT_WORKSPACE_NAME ? user.name.split(" ")[0] : null;
 
   return (
     <div className="mx-auto max-w-[1300px]">
@@ -61,7 +63,7 @@ export default async function DashboardPage() {
         <div>
           <p className="eyebrow mb-3">{fmtDate(now)}</p>
           <h1 className="display text-[2.25rem] md:text-[2.75rem]">
-            {greeting}, {user.name.split(" ")[0]}.
+            {greeting}{firstName ? `, ${firstName}` : ""}.
           </h1>
           <p className="font-hand mt-3 text-[24px] leading-none text-muted-foreground md:text-[28px]">Which businesses should you reach out to today?</p>
         </div>

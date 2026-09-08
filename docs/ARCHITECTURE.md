@@ -25,7 +25,6 @@ architectuur en de scan-pipeline. Zie ook:
 /radar                 Radar            – automatische periodieke scans → lijst
 /saved-searches        Saved searches   – herbruikbare zoekopdrachten
 /settings              Settings         – afzendergegevens, outreach-taal, API-status
-/login, /register      Auth
 ```
 
 Globale zoekbalk (⌘K) zoekt op bedrijfsnaam, website, e-mail, stad en branche
@@ -65,7 +64,7 @@ de standaard dedupe herkend en niet opnieuw toegevoegd.
 | Styling         | Tailwind v4 + shadcn/ui (radix)         | Compacte B2B UI, toegankelijke primitives |
 | Tabellen        | TanStack Table                          | Sorteren/selecteren/kolommen client-side op server-gefilterde data |
 | Database        | PostgreSQL 17 + Prisma 7 (`@prisma/adapter-pg`) | Relationeel model, JSON-kolommen voor audits |
-| Auth            | Better Auth (email + password, Prisma adapter) | Zelf-gehost, geen externe afhankelijkheid, sessions in DB |
+| Auth            | Geen login: één werkruimte (`getWorkspaceUser()`) | Alle records blijven aan een user-row hangen, zodat multi-user later kan |
 | Jobs            | pg-boss 12 (Postgres-based queue)       | Retries, backoff, cron, concurrency zonder Redis |
 | Browser         | Playwright (Chromium)                   | Screenshots desktop/mobile/full-page + DOM-metingen |
 | Performance     | PageSpeed Insights API v5               | Echte Lighthouse + CrUX data |
@@ -83,8 +82,7 @@ PSI, AI) draaien in de worker. Beide processen delen dezelfde Postgres.
 
 ### Mappenstructuur
 ```
-src/app/(app)/...            pagina's achter login
-src/app/(auth)/login|register
+src/app/(app)/...            applicatiepagina's
 src/app/api/...              route handlers (auth-guarded)
 src/components/              UI (shadcn in components/ui)
 src/lib/                     gedeelde types, industries, utils, auth, prisma
@@ -138,8 +136,8 @@ prospects; de UI pollt tot status ∈ {COMPLETED, FAILED, CANCELLED}.
 
 ## 5. Security
 - Alle API keys uitsluitend server-side (`process.env`), nooit in `NEXT_PUBLIC_*`.
-- Elke route handler en page gebruikt `requireUser()`; iedere Prisma-query is
-  gescoped op `userId`.
+- Er is geen login; `requireUser()` levert de werkruimte-eigenaar. Iedere
+  Prisma-query blijft gescoped op `userId`, zodat accounts later toegevoegd kunnen worden.
 - Screenshots worden via `/api/screenshots/[prospectId]/[kind]` geserveerd na
   ownership-check, nooit uit `/public`.
 - Exports draaien server-side met dezelfde ownership-check.

@@ -5,7 +5,7 @@ websites, qualify them as prospects and prepare personalised outreach.
 Built for web designers, agencies, SEO specialists and freelancers.
 
 **Stack:** Next.js 16 (App Router) · TypeScript · Tailwind v4 + shadcn/ui ·
-PostgreSQL 17 + Prisma 7 · Better Auth · pg-boss (Postgres job queue) ·
+PostgreSQL 17 + Prisma 7 · pg-boss (Postgres job queue) ·
 Playwright · Google Places API (New) / OpenStreetMap · PageSpeed Insights ·
 Anthropic or OpenAI · ExcelJS.
 
@@ -20,7 +20,7 @@ Docs: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/DATA-PROVIDERS.md`]
 ## Setup
 
 ```bash
-cp .env.example .env          # fill in DATABASE_URL, BETTER_AUTH_SECRET and API keys
+cp .env.example .env          # fill in DATABASE_URL and API keys
 npm install                   # also runs `prisma generate`
 createdb leadlens             # if the database does not exist yet
 npx prisma migrate dev        # creates the schema
@@ -33,15 +33,14 @@ npm run dev            # http://localhost:3000
 npm run worker:watch   # pg-boss worker: discovery, Playwright audits, PSI, scoring, AI
 ```
 
-Create an account at `/register`, then start at **Find Prospects**.
+There is no login: the app is a single workspace. Start at **Find Prospects**.
 
 ## Environment variables
 
 | Variable | Required | Purpose |
 |---|---|---|
 | `DATABASE_URL` | yes | PostgreSQL connection string (app + worker + pg-boss) |
-| `BETTER_AUTH_SECRET` | yes | Session signing secret (`openssl rand -base64 32`) |
-| `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL` | yes | Public URL of the app |
+| `NEXT_PUBLIC_APP_URL` | yes | Public URL of the app |
 | `GOOGLE_PLACES_API_KEY` | recommended | Places API (New) Text Search + Geocoding API. Without it, discovery falls back to OpenStreetMap (no ratings/reviews, fewer results). |
 | `PAGESPEED_API_KEY` | recommended | PageSpeed Insights quota. Without a key only the mobile run is attempted and 429s are skipped (performance is then derived from own timings). |
 | `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` | optional | Enables AI website analysis, outreach and follow-up generation. `AI_PROVIDER` / `AI_MODEL` override the defaults (`claude-opus-5` / `gpt-4o-mini`). |

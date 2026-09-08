@@ -24,7 +24,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </Link>
           <GlobalSearch />
           <div className="ml-auto flex items-center gap-2">
-            <UserMenu name={user.name} email={user.email} />
+            <UserMenu />
           </div>
         </header>
         <main className="page-enter flex-1 px-5 py-8 md:px-8 md:py-10">{children}</main>

@@ -7,7 +7,7 @@ geen Webjoy-copy, -logo's, -smileys of -klantcontent. Alle tokens staan in
 ## Typografie
 | Rol | Font | Maat / gewicht |
 |---|---|---|
-| Display (auth, dashboardgroet) | Google Sans Flex 500, tracking -0.02em | 2.25–2.75rem, line-height 1.08 |
+| Display (dashboardgroet, foutpagina's) | Google Sans Flex 500, tracking -0.02em | 2.25–2.75rem, line-height 1.08 |
 | Paginakop h1 | Google Sans Flex 500 | 1.75rem (md 2rem), leading 1.15 |
 | Sectiekop h2 | Google Sans Flex 500 | 1.0625rem (17px) |
 | Body | Google Sans Flex 400 | 14–15px, leading 1.55–1.65 |

@@ -42,7 +42,7 @@ export default async function SettingsPage() {
         <SettingsForm
           initial={{
             companyName: settings?.companyName ?? "",
-            senderName: settings?.senderName ?? user.name,
+            senderName: settings?.senderName ?? "",
             senderRole: settings?.senderRole ?? "",
             services: settings?.services ?? [],
             outreachLanguage: settings?.outreachLanguage ?? "en",
