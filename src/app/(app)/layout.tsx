@@ -7,6 +7,9 @@ import { MobileNav } from "@/components/mobile-nav";
 import { Logo } from "@/components/logo";
 import Link from "next/link";
 
+// Every app page reads from the database per request; never prerender at build time.
+export const dynamic = "force-dynamic";
+
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser();
   const followUpsDue = await prisma.prospect.count({
