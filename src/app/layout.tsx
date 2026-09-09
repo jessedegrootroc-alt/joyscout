@@ -36,7 +36,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           closeButton
           toastOptions={{
             classNames: {
-              toast: "!rounded-2xl !border-border !bg-card !text-foreground !shadow-flyout !font-sans",
+              // Colours live on the per-type classes so they never compete with the base class.
+              toast: "!rounded-2xl !shadow-flyout !font-sans",
+              default: "!border-border !bg-card !text-foreground",
+              info: "!border-border !bg-card !text-foreground",
+              warning: "!border-[#f3d98a] !bg-[#fdf6dc] !text-[#7a5a00]",
+              loading: "!border-border !bg-card !text-foreground",
+              // Success = green, error = red; icon inherits via currentColor.
+              success: "!border-[#9be3b8] !bg-[#e6f8ec] !text-[#1b6a3a] [&_[data-icon]]:!text-[#1b6a3a] [&_[data-description]]:!text-[#2f7a4c]",
+              error: "!border-[#f3b8b8] !bg-[#fdecec] !text-[#9b1c1c] [&_[data-icon]]:!text-[#9b1c1c] [&_[data-description]]:!text-[#b23a3a]",
               description: "!text-muted-foreground",
               actionButton: "!rounded-full !bg-primary !text-primary-foreground",
               cancelButton: "!rounded-full",
