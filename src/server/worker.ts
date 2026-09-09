@@ -1,5 +1,6 @@
 import "dotenv/config";
-import { getBoss, QUEUES, type ProspectAnalyzeJob, type ProspectAiJob, type RadarRunJob, type ScanDiscoverJob } from "./jobs/queue";
+import { getBoss, QUEUES, scheduleFollowUpReminders, type ProspectAnalyzeJob, type ProspectAiJob, type RadarRunJob, type ScanDiscoverJob } from "./jobs/queue";
+import { sendDueFollowUpReminders } from "./jobs/reminders";
 import { runScanDiscovery } from "./jobs/discover";
 import { analyzeProspect } from "./jobs/analyze";
 import { admitRadarResults, runRadar } from "./jobs/radar";
@@ -44,6 +45,12 @@ async function main() {
     console.log(`[worker] radar.run ${job.data.radarId}`);
     await runRadar(job.data.radarId);
   });
+
+  await boss.work(QUEUES.followUpReminders, { batchSize: 1, pollingIntervalSeconds: 30 }, async () => {
+    const r = await sendDueFollowUpReminders();
+    if (!r.skipped) console.log(`[worker] followup.reminders · ${r.sent} sent`);
+  });
+  await scheduleFollowUpReminders(boss);
 
   // Recover scans stuck in RUNNING from a previous crash: re-finalise counters.
   const stuck = await prisma.scan.findMany({ where: { status: "RUNNING" }, select: { id: true } });

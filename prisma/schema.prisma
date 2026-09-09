@@ -60,6 +60,10 @@ model UserSettings {
   googleMonthlyBudget  Int      @default(900)
   /// When the budget is reached, fall back to OpenStreetMap instead of failing.
   googleBudgetFallback Boolean  @default(true)
+  /// Where follow-up reminder emails go. Null = reminders off.
+  notificationEmail    String?
+  /// Master switch for follow-up reminder emails.
+  followUpReminders    Boolean  @default(true)
   updatedAt            DateTime @updatedAt
 }
 
@@ -234,10 +238,12 @@ model Prospect {
   lastAnalyzedAt DateTime?
 
   // Mini-CRM
-  status         LeadStatus @default(NEW)
-  contactedAt    DateTime?
-  followUpAt     DateTime?
-  lastActivityAt DateTime?
+  status                 LeadStatus @default(NEW)
+  contactedAt            DateTime?
+  followUpAt             DateTime?
+  /// When the reminder email for the current followUpAt was sent (null = not yet).
+  followUpReminderSentAt DateTime?
+  lastActivityAt         DateTime?
 
   dateFound DateTime @default(now())
   createdAt DateTime @default(now())

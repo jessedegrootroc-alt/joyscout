@@ -29,8 +29,8 @@ export function FollowUpActions({ prospectId, suggested, hasFollowUps }: { prosp
         </Button>
       ) : (
         <Button asChild variant="outline" size="sm" className="h-8">
-          <Link href={`/prospects/${prospectId}?tab=outreach`}>
-            <MessageSquareText className="size-3.5" /> {hasFollowUps ? "Open outreach" : "Generate follow-ups"}
+          <Link href={`/follow-ups/${prospectId}`}>
+            <MessageSquareText className="size-3.5" /> {hasFollowUps ? "Open follow-up" : "Open follow-up message"}
           </Link>
         </Button>
       )}

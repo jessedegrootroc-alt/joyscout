@@ -10,8 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type Values = { companyName: string; senderName: string; senderRole: string; services: string[]; outreachLanguage: string; defaultCountry: string; signature: string; aiMinOpportunity: number; googleMonthlyBudget: number; googleBudgetFallback: boolean };
-type Usage = { googlePlaces: number; googleGeocoding: number; pagespeed: number; resetsInDays: number; googleConfigured: boolean };
+type Values = { companyName: string; senderName: string; senderRole: string; services: string[]; outreachLanguage: string; defaultCountry: string; signature: string; aiMinOpportunity: number; googleMonthlyBudget: number; googleBudgetFallback: boolean; notificationEmail: string; followUpReminders: boolean };
+type Usage = { googlePlaces: number; googleGeocoding: number; pagespeed: number; resetsInDays: number; googleConfigured: boolean; mailConfigured: boolean };
 
 export function SettingsForm({ initial, usage }: { initial: Values; usage: Usage }) {
   const router = useRouter();
@@ -23,7 +23,7 @@ export function SettingsForm({ initial, usage }: { initial: Values; usage: Usage
     const res = await fetch("/api/settings", {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...v, companyName: v.companyName || null, senderName: v.senderName || null, senderRole: v.senderRole || null, signature: v.signature || null, services: servicesText.split(",").map((s) => s.trim()).filter(Boolean) }),
+      body: JSON.stringify({ ...v, companyName: v.companyName || null, senderName: v.senderName || null, senderRole: v.senderRole || null, signature: v.signature || null, notificationEmail: v.notificationEmail.trim() || null, services: servicesText.split(",").map((s) => s.trim()).filter(Boolean) }),
     });
     setBusy(false);
     if (!res.ok) return toast.error("Could not save settings");
@@ -31,8 +31,52 @@ export function SettingsForm({ initial, usage }: { initial: Values; usage: Usage
     router.refresh();
   }
   const pct = initial.googleMonthlyBudget > 0 ? Math.min(100, Math.round((usage.googlePlaces / initial.googleMonthlyBudget) * 100)) : 100;
+  const [testing, setTesting] = useState(false);
+  async function sendTest() {
+    setTesting(true);
+    try {
+      const res = await fetch("/api/settings/test-mail", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ to: v.notificationEmail }) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) toast.error(d.error ?? "Test email failed");
+      else toast.success(`Test reminder sent to ${v.notificationEmail} (${d.transport})`);
+    } finally {
+      setTesting(false);
+    }
+  }
   return (
     <>
+    <section className="surface p-6">
+      <h2 className="mb-1 text-[17px] font-medium tracking-tight">Follow-up reminders</h2>
+      <p className="mb-5 text-[13.5px] text-muted-foreground">When a prospect&apos;s follow-up date arrives you get one email per prospect, with a link to the follow-up message written out and ready to copy.</p>
+      <div className="grid gap-5 sm:grid-cols-2 [&_label]:eyebrow">
+        <div className="space-y-1">
+          <Label>Send reminders to</Label>
+          <Input type="email" value={v.notificationEmail} onChange={(e) => setV({ ...v, notificationEmail: e.target.value })} placeholder="you@yourstudio.nl" autoComplete="email" />
+          {!usage.mailConfigured && <p className="text-[12.5px] text-muted-foreground">The server has no mail transport yet: add <code className="font-mono text-[11.5px]">RESEND_API_KEY</code> (or <code className="font-mono text-[11.5px]">SMTP_HOST</code>) and <code className="font-mono text-[11.5px]">MAIL_FROM</code> to the environment.</p>}
+        </div>
+        <div className="space-y-1">
+          <Label>Reminders</Label>
+          <Select value={v.followUpReminders ? "on" : "off"} onValueChange={(x) => setV({ ...v, followUpReminders: x === "on" })}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="on">On: email me when a follow-up is due</SelectItem>
+              <SelectItem value="off">Off</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-[12.5px] text-muted-foreground">Checked every 15 minutes by the worker. One email per prospect per follow-up date.</p>
+        </div>
+      </div>
+      <div className="mt-6 flex flex-wrap justify-end gap-2">
+        <Button variant="outline" onClick={sendTest} disabled={testing || !usage.mailConfigured || !v.notificationEmail.includes("@")} title={usage.mailConfigured ? "Send a sample reminder to this address" : "Configure a mail transport first"}>
+          {testing ? "Sending…" : "Send test email"}
+        </Button>
+        <Button onClick={save} disabled={busy}>
+          {busy ? "Saving…" : "Save reminders"}
+        </Button>
+      </div>
+    </section>
     <section className="surface p-6">
       <h2 className="mb-1 text-[17px] font-medium tracking-tight">API budget</h2>
       <p className="mb-5 text-[13.5px] text-muted-foreground">Google gives every paid tier a free monthly allowance. Keep the budget under that allowance and Joyscrape never spends money: when it is reached, scans switch to OpenStreetMap.</p>

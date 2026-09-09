@@ -9,6 +9,7 @@ export const QUEUES = {
   prospectAnalyze: "prospect.analyze",
   prospectAi: "prospect.ai",
   radarRun: "radar.run",
+  followUpReminders: "followup.reminders",
 } as const;
 
 export type ScanDiscoverJob = { scanId: string };
@@ -44,6 +45,7 @@ export async function ensureQueues(boss: PgBoss) {
   await boss.createQueue(QUEUES.prospectAnalyze, { retryLimit: 1, retryDelay: 20, retryBackoff: true, expireInSeconds: 60 * 10 });
   await boss.createQueue(QUEUES.prospectAi, { retryLimit: 1, retryDelay: 30, retryBackoff: true, expireInSeconds: 60 * 5 });
   await boss.createQueue(QUEUES.radarRun, { retryLimit: 1, retryDelay: 60, expireInSeconds: 60 * 5 });
+  await boss.createQueue(QUEUES.followUpReminders, { retryLimit: 0, expireInSeconds: 60 * 5 });
 }
 
 export async function enqueueScan(scanId: string) {
@@ -74,4 +76,9 @@ export async function unscheduleRadar(radarId: string) {
 export async function enqueueRadarNow(radarId: string) {
   const boss = await getBoss();
   return boss.send(QUEUES.radarRun, { radarId } satisfies RadarRunJob, { singletonKey: `radar-now:${radarId}` });
+}
+
+/** Check for due follow-ups every 15 minutes (worker registers the handler). */
+export async function scheduleFollowUpReminders(boss: PgBoss) {
+  await boss.schedule(QUEUES.followUpReminders, "*/15 * * * *", {}, { key: "followup-reminders", tz: "Europe/Amsterdam" });
 }

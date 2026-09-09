@@ -17,6 +17,7 @@ export default async function SettingsPage() {
     { label: "Google Places API", ok: status.googlePlaces, env: "GOOGLE_PLACES_API_KEY", note: status.googlePlaces ? "Business discovery with ratings and reviews." : "Falls back to OpenStreetMap (no ratings/reviews, fewer results)." },
     { label: "PageSpeed Insights", ok: status.pagespeed, env: "PAGESPEED_API_KEY", note: status.pagespeed ? "Mobile + desktop Lighthouse runs." : "Works without a key at a very low quota; desktop run skipped." },
     { label: `AI analysis & outreach${status.aiProvider ? ` (${status.aiProvider})` : ""}`, ok: status.ai, env: "ANTHROPIC_API_KEY or OPENAI_API_KEY", note: status.ai ? "Qualitative analysis, outreach and follow-ups enabled." : "AI analysis, outreach generation and follow-ups are disabled." },
+    { label: `Email reminders${status.mailTransport ? ` (${status.mailTransport})` : ""}`, ok: status.mail, env: "RESEND_API_KEY or SMTP_HOST, plus MAIL_FROM", note: status.mail ? "Follow-up reminders are emailed when a follow-up date arrives." : "No reminder emails until a mail transport is configured." },
   ];
   return (
     <div className="mx-auto max-w-3xl">
@@ -53,8 +54,10 @@ export default async function SettingsPage() {
             aiMinOpportunity: settings?.aiMinOpportunity ?? 40,
             googleMonthlyBudget: settings?.googleMonthlyBudget ?? 900,
             googleBudgetFallback: settings?.googleBudgetFallback ?? true,
+            notificationEmail: settings?.notificationEmail ?? "",
+            followUpReminders: settings?.followUpReminders ?? true,
           }}
-          usage={{ googlePlaces: budget.used, googleGeocoding: geocodingUsed, pagespeed: pagespeedUsed, resetsInDays: budget.resetsInDays, googleConfigured: status.googlePlaces }}
+          usage={{ googlePlaces: budget.used, googleGeocoding: geocodingUsed, pagespeed: pagespeedUsed, resetsInDays: budget.resetsInDays, googleConfigured: status.googlePlaces, mailConfigured: status.mail }}
         />
       </div>
     </div>
