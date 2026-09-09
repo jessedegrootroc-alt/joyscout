@@ -22,6 +22,13 @@ import { fmtRelative } from "@/lib/format";
 export function ProspectDetail({ prospect: initial, lists, initialTab, aiConfigured, outreachLanguage }: { prospect: ProspectDTO; lists: { id: string; name: string }[]; initialTab?: string; aiConfigured: boolean; outreachLanguage: string }) {
   const router = useRouter();
   const [p, setP] = useState(initial);
+  // The server component re-renders after router.refresh() (e.g. list added, note saved);
+  // adopt the fresh prospect when the prop identity changes so chips and the timeline update.
+  const [prevInitial, setPrevInitial] = useState(initial);
+  if (initial !== prevInitial) {
+    setPrevInitial(initial);
+    setP(initial);
+  }
   const [reanalyzing, setReanalyzing] = useState(false);
   const a = p.analysis;
   const insights = ((a?.insights as InsightRecord[] | null) ?? p.insights.map((t) => ({ key: t, text: t, severity: "info", source: "derived" }) as InsightRecord)).slice(0, 6);

@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarClock, ListPlus, Trash2, Search, ScanSearch, MessageSquareText, StickyNote, Tag, PhoneOutgoing, CalendarPlus, Download, ListMinus, Sparkles } from "lucide-react";
+import { CalendarClock, ListPlus, Trash2, Search, ScanSearch, MessageSquareText, StickyNote, Tag, PhoneOutgoing, CalendarPlus, Download, ListMinus, Sparkles, Plus, Check } from "lucide-react";
 import type { ProspectDTO } from "./types";
 import { LEAD_STATUSES, LEAD_STATUS_LABEL } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { fmtDate } from "@/lib/format";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -31,6 +31,35 @@ export function CrmPanel({ p, lists, onChange }: { p: ProspectDTO; lists: { id: 
   const router = useRouter();
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Lists can be created right here, so keep a local copy that we can extend
+  // before the server component re-renders with the fresh list.
+  const [createdLists, setCreatedLists] = useState<{ id: string; name: string }[]>([]);
+  const allLists = useMemo(() => [...lists, ...createdLists.filter((c) => !lists.some((l) => l.id === c.id))], [lists, createdLists]);
+  const [listOpen, setListOpen] = useState(false);
+  const [newListName, setNewListName] = useState("");
+  const [creatingList, setCreatingList] = useState(false);
+
+  async function createListAndAdd() {
+    const name = newListName.trim();
+    if (!name) return;
+    setCreatingList(true);
+    try {
+      const res = await fetch("/api/lists", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data?.error ?? "Could not create list");
+        return;
+      }
+      setCreatedLists((cur) => [...cur, { id: data.id, name: data.name }]);
+      setNewListName("");
+      setListOpen(false);
+      await bulk("add_to_list", { listId: data.id });
+      toast.success(`List “${data.name}” created`);
+    } finally {
+      setCreatingList(false);
+    }
+  }
 
   async function patch(body: Record<string, unknown>) {
     const res = await fetch(`/api/prospects/${p.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -110,21 +139,65 @@ export function CrmPanel({ p, lists, onChange }: { p: ProspectDTO; lists: { id: 
                 <PhoneOutgoing className="size-3.5" /> Mark contacted
               </Button>
             )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            <Popover open={listOpen} onOpenChange={setListOpen}>
+              <PopoverTrigger asChild>
                 <Button size="sm" variant="outline">
                   <ListPlus className="size-3.5" /> Add to list
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                {lists.filter((l) => !p.lists.some((x) => x.list.id === l.id)).map((l) => (
-                  <DropdownMenuItem key={l.id} onClick={() => bulk("add_to_list", { listId: l.id })}>
-                    {l.name}
-                  </DropdownMenuItem>
-                ))}
-                {lists.length === 0 && <DropdownMenuItem disabled>No lists yet — create one from the Lists page</DropdownMenuItem>}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </PopoverTrigger>
+              <PopoverContent align="start" sideOffset={6} className="w-72 gap-0 p-0">
+                {allLists.length > 0 ? (
+                  <ul className="max-h-56 overflow-y-auto p-1.5">
+                    {allLists.map((l) => {
+                      const inList = p.lists.some((x) => x.list.id === l.id);
+                      return (
+                        <li key={l.id}>
+                          <button
+                            type="button"
+                            disabled={inList}
+                            onClick={async () => {
+                              setListOpen(false);
+                              await bulk("add_to_list", { listId: l.id });
+                            }}
+                            className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-[13.5px] transition-colors hover:bg-surface-hover disabled:cursor-default disabled:text-muted-foreground disabled:hover:bg-transparent"
+                          >
+                            <span className="truncate">{l.name}</span>
+                            {inList && <Check className="size-3.5 shrink-0" />}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <p className="px-3.5 pt-3 text-[12.5px] text-muted-foreground">No lists yet. Create your first one below.</p>
+                )}
+                <form
+                  className="flex items-center gap-1.5 border-t border-border p-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void createListAndAdd();
+                  }}
+                >
+                  <Input
+                    autoFocus={allLists.length === 0}
+                    value={newListName}
+                    onChange={(e) => setNewListName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void createListAndAdd();
+                      }
+                    }}
+                    placeholder="New list, e.g. “Bellen deze week”"
+                    maxLength={80}
+                    className="h-9 flex-1 rounded-xl text-[13px]"
+                  />
+                  <Button type="submit" size="sm" className="h-9 shrink-0 gap-1 px-3" disabled={creatingList || !newListName.trim()} title="Create list and add this prospect">
+                    <Plus className="size-3.5" /> {creatingList ? "Creating…" : "Create"}
+                  </Button>
+                </form>
+              </PopoverContent>
+            </Popover>
           </div>
           {p.lists.length > 0 && (
             <div className="flex flex-wrap gap-1.5 pt-1">
