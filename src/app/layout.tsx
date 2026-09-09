@@ -3,9 +3,9 @@ import { Google_Sans_Flex, JetBrains_Mono, Caveat } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const sans = Google_Sans_Flex({ variable: "--font-sans", subsets: ["latin"], weight: ["300", "400", "500", "600", "700"], display: "swap" });
-const mono = JetBrains_Mono({ variable: "--font-mono", subsets: ["latin"], weight: ["400", "500"], display: "swap" });
-const hand = Caveat({ variable: "--font-hand", subsets: ["latin"], weight: ["600"], display: "swap" });
+const sans = Google_Sans_Flex({ variable: "--font-sans", subsets: ["latin"], weight: "variable", display: "swap" });
+const mono = JetBrains_Mono({ variable: "--font-mono", subsets: ["latin"], weight: "variable", display: "swap" });
+const hand = Caveat({ variable: "--font-hand", subsets: ["latin"], weight: "variable", display: "swap" });
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
 const ogTitle = "Vindt lokale leads met een verouderde website";

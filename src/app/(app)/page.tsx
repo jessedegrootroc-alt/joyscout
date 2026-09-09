@@ -107,7 +107,7 @@ export default async function DashboardPage() {
               title="Top opportunities"
               meta="best unworked leads"
               action={
-                <Link href="/prospects?sort=opportunity_desc" className="link-arrow inline-flex items-center gap-1.5 text-[13px] font-medium text-brand">
+                <Link href="/prospects?sort=opportunity_desc" className="link-arrow inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-ink">
                   View all <ArrowRight className="size-3.5" />
                 </Link>
               }
@@ -156,7 +156,7 @@ export default async function DashboardPage() {
             <SectionHeader
               title="Follow-ups due"
               action={
-                <Link href="/follow-ups" className="link-arrow inline-flex items-center gap-1.5 text-[13px] font-medium text-brand">
+                <Link href="/follow-ups" className="link-arrow inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-ink">
                   View all <ArrowRight className="size-3.5" />
                 </Link>
               }
@@ -184,7 +184,7 @@ export default async function DashboardPage() {
             <SectionHeader
               title="Recent scrapes"
               action={
-                <Link href="/scans" className="link-arrow inline-flex items-center gap-1.5 text-[13px] font-medium text-brand">
+                <Link href="/scans" className="link-arrow inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-ink">
                   View all <ArrowRight className="size-3.5" />
                 </Link>
               }

@@ -102,7 +102,7 @@ export function FindProspectsForm({
             {budget.remaining < 3 ? (budget.fallback ? " · scans use OpenStreetMap until the reset" : " · scans are paused until the reset") : ` · about ${budget.remaining * 20} more businesses with full data`}
             <span className="text-muted-foreground"> · resets in {budget.resetsInDays} day{budget.resetsInDays === 1 ? "" : "s"}</span>
           </div>
-          <Link href="/settings" className="text-[13px] font-medium text-brand hover:underline">
+          <Link href="/settings" className="text-[13px] font-medium text-brand-ink hover:underline">
             Change budget
           </Link>
         </div>
