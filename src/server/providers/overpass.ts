@@ -1,7 +1,9 @@
 import type { BusinessProvider, DiscoveryInput, RawBusiness, SearchResult } from "./types";
 import { haversineKm } from "./types";
 
-const ENDPOINTS = ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter"];
+const ENDPOINTS = ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
+/** Two passes over all mirrors with growing back-off before giving up. */
+const BACKOFF_MS = [3000, 8000];
 const UA = "Joyscrape/0.1 (prospecting tool; contact via app operator)";
 
 type Element = { type: string; id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> };
@@ -38,7 +40,9 @@ export class OverpassProvider implements BusinessProvider {
     onProgress?.(isCustom ? `OpenStreetMap (Overpass): fetching named businesses within ${Math.round(customRadiusM / 1000)} km to match “${input.query}”` : "OpenStreetMap (Overpass): querying businesses");
 
     let lastErr: Error | null = null;
-    for (const endpoint of ENDPOINTS) {
+    const attempts = BACKOFF_MS.flatMap((wait, round) => ENDPOINTS.map((endpoint) => ({ endpoint, wait, round })));
+    for (const [idx, { endpoint, wait, round }] of attempts.entries()) {
+      if (round > 0 && idx % ENDPOINTS.length === 0) onProgress?.(`OpenStreetMap (Overpass): mirrors busy, retrying (round ${round + 1})`);
       try {
         const res = await fetch(endpoint, {
           method: "POST",
@@ -48,7 +52,7 @@ export class OverpassProvider implements BusinessProvider {
         });
         if (res.status === 429 || res.status === 504 || res.status === 406) {
           lastErr = new Error(`Overpass HTTP ${res.status} (rate limited or overloaded)`);
-          await new Promise((r) => setTimeout(r, 5000));
+          await new Promise((r) => setTimeout(r, wait));
           continue;
         }
         if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`);

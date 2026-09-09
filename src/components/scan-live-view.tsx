@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Loader2, XCircle, Search, Globe, ScanSearch, ListChecks, Calculator } from "lucide-react";
+import { CheckCircle2, Loader2, XCircle, Search, Globe, ScanSearch, ListChecks, Calculator, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import type { ProspectRowDTO } from "@/server/prospects/query";
 import { PageHeader } from "@/components/page-header";
@@ -99,6 +99,22 @@ export function ScanLiveView({
   }, [rows, applyFilters, scan.filters]);
   const hasResultFilters = scan.filters?.maxWebsiteScore != null || scan.filters?.minOpportunityScore != null;
 
+  const [retrying, setRetrying] = useState(false);
+  const retry = async () => {
+    setRetrying(true);
+    try {
+      const res = await fetch(`/api/scans/${scan.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "retry" }) });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.error ?? "Retry failed");
+      setRows([]);
+      setScan((s) => ({ ...s, status: "QUEUED", stage: "Queued", error: null, providerNote: null, totalFound: 0, totalNew: 0, totalDuplicates: 0, analyzedCount: 0, failedCount: 0, noWebsiteCount: 0 }));
+      toast.success("Scan restarted");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setRetrying(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-[1600px]">
       <PageHeader
@@ -111,6 +127,11 @@ export function ScanLiveView({
         }
         actions={
           <>
+            {(scan.status === "FAILED" || scan.status === "CANCELLED") && (
+              <Button size="sm" className="gap-1.5" disabled={retrying} onClick={retry}>
+                <RotateCcw className={cn("size-3.5", retrying && "animate-spin")} /> {retrying ? "Restarting…" : "Retry scan"}
+              </Button>
+            )}
             {active && (
               <Button
                 variant="outline"
@@ -137,6 +158,11 @@ export function ScanLiveView({
             {active ? <Loader2 className="size-4 animate-spin text-muted-foreground" /> : scan.status === "COMPLETED" ? <CheckCircle2 className="size-5 text-[#1b6a3a]" /> : <XCircle className="size-5 text-destructive" />}
             {active ? scan.stage : scan.status === "COMPLETED" ? "Scan completed" : scan.status === "CANCELLED" ? "Scan cancelled" : "Scan failed"}
             {scan.error && <span className="text-[13px] font-normal text-destructive">— {scan.error}</span>}
+            {scan.status === "FAILED" && (
+              <button type="button" onClick={retry} disabled={retrying} className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-[12.5px] font-medium text-foreground transition-colors hover:bg-surface-hover disabled:opacity-60">
+                <RotateCcw className={cn("size-3", retrying && "animate-spin")} /> Retry
+              </button>
+            )}
           </div>
           <div className="flex flex-wrap gap-x-5 gap-y-1 font-mono text-[12px] text-muted-foreground tabular-nums">
             <span>
