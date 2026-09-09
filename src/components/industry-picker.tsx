@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ComponentType } from "react";
+import { useMemo, useRef, useState, type ComponentType } from "react";
 import { Car, Check, ChevronDown, Fan, HardHat, House, KeyRound, PaintRoller, PersonStanding, Scale, Scissors, Search, Smile, SprayCan, Sun, TreeDeciduous, UtensilsCrossed, Wrench, Zap } from "lucide-react";
 import { INDUSTRIES, type Industry } from "@/lib/industries";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -65,6 +65,18 @@ export function IndustryPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  /** Open downwards only: if the space under the trigger is tight, scroll the page so the menu fits. */
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next || typeof window === "undefined") return;
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const wanted = 460; // ~ search bar + two groups of tiles
+    const below = window.innerHeight - rect.bottom;
+    if (below < wanted) window.scrollBy({ top: Math.min(rect.top - 96, wanted - below), behavior: "smooth" });
+  };
 
   const selected = industryKey ? INDUSTRIES.find((i) => i.key === industryKey) ?? null : null;
   const needle = q.trim().toLowerCase();
@@ -92,9 +104,10 @@ export function IndustryPicker({
   const SelectedIcon = selected ? ICONS[selected.key] ?? Search : customQuery ? Search : null;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <button
+          ref={triggerRef}
           type="button"
           aria-haspopup="dialog"
           aria-expanded={open}
@@ -129,7 +142,8 @@ export function IndustryPicker({
         </button>
       </PopoverTrigger>
 
-      <PopoverContent align="start" sideOffset={8} className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] rounded-3xl p-0 shadow-flyout">
+      {/* Always open downwards; the list scrolls within the space that is left below the trigger. */}
+      <PopoverContent side="bottom" align="start" sideOffset={8} avoidCollisions={false} collisionPadding={16} className="flex w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden rounded-3xl p-0 shadow-flyout" style={{ maxHeight: "max(220px, calc(var(--radix-popover-content-available-height) - 8px))" }}>
         <div className="border-b border-border p-3">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -151,7 +165,7 @@ export function IndustryPicker({
           </div>
         </div>
 
-        <div className="max-h-[min(60vh,520px)] overflow-y-auto p-3">
+        <div className="min-h-0 flex-1 overflow-y-auto p-3">
           {visibleGroups.map((g) => (
             <div key={g.label.en} className="mb-4 last:mb-0">
               <p className="eyebrow mb-2 px-1">{g.label[lang]}</p>
