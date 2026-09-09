@@ -1,12 +1,15 @@
 import { cn } from "@/lib/utils";
+import { SmileyMark } from "./smiley-mark";
 
 /**
  * Joyscrape wordmark: bold lowercase-feel sans, a blue smile tucked under the J
  * and an orange final "e". Built from text + inline SVG so it stays crisp at
- * every size and follows the app font. `compact` renders just the J + smile.
+ * every size and follows the app font. `compact` renders the smiley mark.
  */
 export function Logo({ className, compact = false, size = "md" }: { className?: string; compact?: boolean; size?: "md" | "lg" }) {
   const px = size === "lg" ? 34 : 24;
+  // Compact = the smiley favicon (mobile header); the wordmark keeps the J + smile.
+  if (compact) return <SmileyMark className={cn("size-8", className)} />;
   return (
     <span
       className={cn("inline-flex items-baseline font-bold leading-none tracking-[-0.045em] text-[#1a1a1a] select-none", className)}
