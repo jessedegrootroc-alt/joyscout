@@ -43,7 +43,7 @@ export default async function DashboardPage() {
 
   const stats = [
     { label: "Prospects found", value: total },
-    { label: "Hot leads", value: hotLeads, hint: "opportunity ≥ 80" },
+    { label: "Hot leads", value: hotLeads, hint: "opportunity 80+" },
     { label: "Qualified", value: count("QUALIFIED") },
     { label: "Contacted", value: contacted },
     { label: "Replies", value: replies },

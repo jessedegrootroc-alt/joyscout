@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
-import { Google_Sans_Flex, JetBrains_Mono, Caveat } from "next/font/google";
+import { Google_Sans_Flex, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const sans = Google_Sans_Flex({ variable: "--font-sans", subsets: ["latin"], weight: "variable", display: "swap" });
 const mono = JetBrains_Mono({ variable: "--font-mono", subsets: ["latin"], weight: "variable", display: "swap" });
-const hand = Caveat({ variable: "--font-hand", subsets: ["latin"], weight: "variable", display: "swap" });
+// The handwriting face is used for one fixed sentence on the dashboard, so we ship a Caveat 600
+// subset containing exactly those glyphs (~3 KB instead of 70+ KB). It was generated with
+// fonts.googleapis.com/css2?family=Caveat:wght@600&text=<sentence>; regenerate it if you use the
+// font for other text, otherwise missing glyphs fall back to the system cursive.
+const hand = localFont({ src: "./fonts/caveat-tagline.woff2", variable: "--font-hand", weight: "600", display: "swap", fallback: ["cursive"] });
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
 const ogTitle = "Vindt lokale leads met een verouderde website";
