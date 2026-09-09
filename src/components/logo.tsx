@@ -1,18 +1,37 @@
 import { cn } from "@/lib/utils";
 
-/** Joyscrape wordmark: a warm circular lens mark + medium-weight wordmark. */
+/**
+ * Joyscrape wordmark: bold lowercase-feel sans, a blue smile tucked under the J
+ * and an orange final "e". Built from text + inline SVG so it stays crisp at
+ * every size and follows the app font. `compact` renders just the J + smile.
+ */
 export function Logo({ className, compact = false, size = "md" }: { className?: string; compact?: boolean; size?: "md" | "lg" }) {
-  const mark = size === "lg" ? "size-9" : "size-7";
+  const px = size === "lg" ? 34 : 24;
   return (
-    <div className={cn("flex items-center gap-2.5 font-medium tracking-tight", className)}>
-      <span className={cn("relative flex items-center justify-center rounded-full bg-primary text-primary-foreground", mark)}>
-        <svg viewBox="0 0 24 24" className={size === "lg" ? "size-4.5" : "size-3.5"} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="6" />
-          <path d="m20 20-4.2-4.2" />
+    <span
+      className={cn("inline-flex items-baseline font-bold leading-none tracking-[-0.045em] text-[#1a1a1a] select-none", className)}
+      style={{ fontSize: px }}
+      aria-label="Joyscrape"
+      role="img"
+    >
+      <span className="relative inline-block">
+        J
+        <svg
+          viewBox="0 0 26 12"
+          fill="none"
+          aria-hidden="true"
+          className="absolute left-[2%] top-[84%] w-[104%]"
+          style={{ height: px * 0.3 }}
+        >
+          <path d="M2.2 2.4c4.3 6.2 17.3 6.2 21.6 0" stroke="#5E9BFF" strokeWidth="4" strokeLinecap="round" />
         </svg>
-        <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-background bg-brand" aria-hidden="true" />
       </span>
-      {!compact && <span className={size === "lg" ? "text-[22px]" : "text-[17px]"}>Joyscrape</span>}
-    </div>
+      {!compact && (
+        <>
+          <span>oyscrap</span>
+          <span className="text-[#FF864A]">e</span>
+        </>
+      )}
+    </span>
   );
 }
