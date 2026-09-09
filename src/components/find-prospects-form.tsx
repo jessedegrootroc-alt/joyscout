@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { IndustryPicker } from "@/components/industry-picker";
 
 type Preset = {
   query?: string;
@@ -108,38 +109,15 @@ export function FindProspectsForm({
       )}
 
       <Step n={1} title="What type of businesses are you looking for?">
-        <div className="flex flex-wrap gap-2">
-          {INDUSTRIES.map((ind) => (
-            <button
-              key={ind.key}
-              type="button"
-              onClick={() => {
-                setIndustryKey(ind.key === industryKey ? null : ind.key);
-                setCustomQuery("");
-              }}
-              aria-pressed={industryKey === ind.key}
-              className={cn(
-                "inline-flex h-10 items-center gap-1.5 rounded-full border border-input bg-card px-4 text-[14px] font-medium transition-[background-color,border-color,color,transform] duration-200 hover:bg-surface-hover active:scale-[0.98]",
-                industryKey === ind.key && "border-primary bg-primary text-primary-foreground hover:bg-black",
-              )}
-            >
-              {ind.label[lang]}
-              {lang !== "en" && <span className={cn("hidden text-[12px] font-normal text-muted-foreground sm:inline", industryKey === ind.key && "text-primary-foreground/60")}>{ind.label.en}</span>}
-            </button>
-          ))}
-        </div>
-        <div className="mt-4 flex items-center gap-3">
-          <span className="font-hand text-[20px] text-muted-foreground">or</span>
-          <Input
-            value={customQuery}
-            onChange={(e) => {
-              setCustomQuery(e.target.value);
-              if (e.target.value) setIndustryKey(null);
-            }}
-            placeholder={lang === "nl" ? "Eigen zoekterm, bv. “tegelzetter”" : "Custom search term, e.g. “tiling contractor”"}
-            className="h-10 max-w-sm"
-          />
-        </div>
+        <IndustryPicker
+          lang={lang}
+          industryKey={industryKey}
+          customQuery={customQuery}
+          onChange={(next) => {
+            setIndustryKey(next.industryKey);
+            setCustomQuery(next.customQuery);
+          }}
+        />
       </Step>
 
       <Step n={2} title="Where?">
