@@ -8,6 +8,7 @@ export const env = {
   aiProvider: (process.env.AI_PROVIDER as "anthropic" | "openai" | undefined) || undefined,
   aiModel: process.env.AI_MODEL || "",
   storageDir: process.env.STORAGE_DIR || "./storage",
+  blobToken: process.env.BLOB_READ_WRITE_TOKEN || "",
   analyzeConcurrency: Number(process.env.ANALYZE_CONCURRENCY || 3),
   appUrl: process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000"),
   // Outgoing mail (follow-up reminders)
@@ -26,6 +27,7 @@ export function integrationStatus() {
     pagespeed: Boolean(env.pagespeedKey),
     ai: Boolean(env.anthropicKey || env.openaiKey),
     aiProvider: env.anthropicKey && env.aiProvider !== "openai" ? "anthropic" : env.openaiKey ? "openai" : null,
+    blob: Boolean(env.blobToken),
     mail: env.mailTransport === "log" || Boolean((env.resendKey || env.smtpHost) && env.mailFrom),
     mailTransport: env.mailTransport === "log" ? "log" : env.resendKey ? "resend" : env.smtpHost ? "smtp" : null,
   };

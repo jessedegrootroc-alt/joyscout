@@ -5,6 +5,7 @@ import { Readable } from "node:stream";
 import { getApiUser, unauthorized } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
+import { isRemoteRef } from "@/server/storage";
 
 const KINDS = { desktop: "screenshotDesktop", mobile: "screenshotMobile", full: "screenshotFull" } as const;
 
@@ -20,6 +21,8 @@ export async function GET(req: Request, ctx: RouteContext<"/api/screenshots/[pro
   });
   const rel = analysis?.[field] as string | null | undefined;
   if (!rel) return new Response("Not found", { status: 404 });
+  // Blob-hosted screenshot: redirect to the (immutable, unguessable) public URL.
+  if (isRemoteRef(rel)) return Response.redirect(rel, 302);
   const root = path.resolve(env.storageDir);
   const abs = path.resolve(root, rel);
   if (!abs.startsWith(root)) return new Response("Forbidden", { status: 403 });

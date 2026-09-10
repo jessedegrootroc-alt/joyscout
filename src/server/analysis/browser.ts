@@ -1,7 +1,5 @@
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
-import { mkdir } from "node:fs/promises";
-import path from "node:path";
-import { env } from "@/lib/env";
+import { saveScreenshot } from "@/server/storage";
 import type { BrowserResult, DomMetrics, MobileMetrics, FetchOutcome } from "./types";
 
 let browserPromise: Promise<Browser> | null = null;
@@ -59,9 +57,7 @@ export async function auditWithBrowser(url: string, prospectId: string): Promise
     responseHeaders: {},
     cookies: [],
   };
-  const dir = path.join(env.storageDir, "screenshots", prospectId);
-  await mkdir(dir, { recursive: true });
-  const rel = (name: string) => path.join("screenshots", prospectId, name);
+  const store = (name: string, buf: Buffer) => saveScreenshot(prospectId, name, buf);
 
   let browser: Browser;
   try {
@@ -143,10 +139,10 @@ export async function auditWithBrowser(url: string, prospectId: string): Promise
     await page.evaluate(NAME_SHIM);
     result.dom = await page.evaluate(collectDomMetrics, DESKTOP.height);
 
-    await page.screenshot({ path: path.join(dir, "desktop.jpg"), type: "jpeg", quality: 80 }).then(() => (result.screenshotDesktop = rel("desktop.jpg"))).catch(() => {});
+    await page.screenshot({ type: "jpeg", quality: 80 }).then(async (buf) => (result.screenshotDesktop = await store("desktop.jpg", buf))).catch(() => {});
     await page
-      .screenshot({ path: path.join(dir, "full.jpg"), type: "jpeg", quality: 60, fullPage: true, timeout: 20_000 })
-      .then(() => (result.screenshotFull = rel("full.jpg")))
+      .screenshot({ type: "jpeg", quality: 60, fullPage: true, timeout: 20_000 })
+      .then(async (buf) => (result.screenshotFull = await store("full.jpg", buf)))
       .catch(() => {});
     result.ok = true;
   } catch (err) {
@@ -169,7 +165,7 @@ export async function auditWithBrowser(url: string, prospectId: string): Promise
       await dismissCookieBanners(page);
       await page.evaluate(NAME_SHIM);
       result.mobile = await page.evaluate(collectMobileMetrics);
-      await page.screenshot({ path: path.join(dir, "mobile.jpg"), type: "jpeg", quality: 80 }).then(() => (result.screenshotMobile = rel("mobile.jpg"))).catch(() => {});
+      await page.screenshot({ type: "jpeg", quality: 80 }).then(async (buf) => (result.screenshotMobile = await store("mobile.jpg", buf))).catch(() => {});
     } catch {
       /* mobile pass is best-effort */
     } finally {
