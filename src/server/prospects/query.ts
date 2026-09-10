@@ -177,6 +177,7 @@ export const prospectRowSelect = {
   contactedAt: true,
   dateFound: true,
   source: true,
+  socialLinks: true,
   analysis: { select: { screenshotDesktop: true, fetchOutcome: true } },
 } satisfies Prisma.ProspectSelect;
 
@@ -207,7 +208,16 @@ export function serializeRow(r: ProspectRow) {
     contactedAt: r.contactedAt?.toISOString() ?? null,
     dateFound: r.dateFound.toISOString(),
     screenshot: r.analysis?.screenshotDesktop ? `/api/screenshots/${r.id}/desktop` : null,
+    // "Social only": no website, but a Facebook/Instagram/LinkedIn page was found.
+    socialOnly: !r.hasWebsite ? socialOnlyOf(r.socialLinks) : null,
+    socialLinks: undefined,
     analysis: undefined,
   };
 }
 export type ProspectRowDTO = ReturnType<typeof serializeRow>;
+
+function socialOnlyOf(links: unknown): { network: "facebook" | "instagram" | "linkedin"; url: string } | null {
+  const l = (links ?? {}) as Record<string, string>;
+  for (const network of ["facebook", "instagram", "linkedin"] as const) if (l[network]) return { network, url: l[network] };
+  return null;
+}

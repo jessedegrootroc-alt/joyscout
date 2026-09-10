@@ -4,6 +4,7 @@ import { integrationStatus } from "@/lib/env";
 import { PageHeader } from "@/components/page-header";
 import { FindProspectsForm } from "@/components/find-prospects-form";
 import { getGoogleBudget } from "@/server/providers/usage";
+import Link from "next/link";
 
 export const metadata = { title: "Find Prospects" };
 
@@ -18,7 +19,19 @@ export default async function FindPage(props: PageProps<"/find">) {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader eyebrow="New scan" title="Find prospects" description="Tell us who you are looking for. We find the businesses, load every website and score the opportunity." />
+      <PageHeader
+        eyebrow="New scan"
+        title="Find prospects"
+        description={
+          <>
+            Tell us who you are looking for. We find the businesses, load every website and score the opportunity. Already have names from a Facebook group or directory?{" "}
+            <Link href="/import" className="font-medium text-brand-ink hover:underline">
+              Import a list
+            </Link>
+            .
+          </>
+        }
+      />
       <FindProspectsForm
         defaultCountry={settings?.defaultCountry ?? "NL"}
         providers={{ googlePlaces: status.googlePlaces, pagespeed: status.pagespeed, ai: status.ai }}

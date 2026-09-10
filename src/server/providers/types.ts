@@ -17,7 +17,7 @@ export type DiscoveryInput = {
 };
 
 export type RawBusiness = {
-  source: "google_places" | "overpass";
+  source: "google_places" | "overpass" | "manual";
   sourceRef: string;
   name: string;
   website?: string | null;

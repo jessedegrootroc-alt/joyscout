@@ -24,6 +24,16 @@ export const scanInputSchema = z.object({
 });
 export type ScanInput = z.infer<typeof scanInputSchema>;
 
+/** Paste-import: one business per line ("Name, City" or a Facebook page URL). */
+export const importInputSchema = z.object({
+  text: z.string().min(2).max(20_000),
+  countryCode: z.string().length(2).default("NL"),
+  defaultCity: z.string().trim().max(120).optional(),
+  industryKey: z.string().trim().max(60).nullable().optional(),
+  sourceLabel: z.string().trim().max(120).optional(),
+});
+export type ImportInput = z.infer<typeof importInputSchema>;
+
 export const LEAD_STATUSES = [
   "NEW",
   "QUALIFIED",

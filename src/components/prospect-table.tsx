@@ -110,7 +110,15 @@ export function ProspectTable({
         header: "Website",
         cell: ({ row }) => {
           const p = row.original;
-          if (!p.hasWebsite || !p.website) return <span className="text-[12.5px] italic text-muted-foreground">No website found</span>;
+          if (!p.hasWebsite || !p.website) {
+            if (p.socialOnly)
+              return (
+                <a href={p.socialOnly.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full bg-tint-pink/30 px-2 py-0.5 text-[11.5px] font-medium text-[#8a2a5c] hover:underline" onClick={(e) => e.stopPropagation()} title="No website — only a social page">
+                  Only {p.socialOnly.network.charAt(0).toUpperCase() + p.socialOnly.network.slice(1)}
+                </a>
+              );
+            return <span className="text-[12.5px] italic text-muted-foreground">No website found</span>;
+          }
           return (
             <a href={p.website} target="_blank" rel="noreferrer" className="inline-flex max-w-[180px] items-center gap-1 truncate text-xs hover:underline" onClick={(e) => e.stopPropagation()}>
               <Globe className="size-3 shrink-0 text-muted-foreground" />

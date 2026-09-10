@@ -15,6 +15,9 @@ export type BusinessSignals = {
   industry: string;
   source: string;
   city: string | null;
+  /** Social profiles found (facebook/instagram/linkedin → url). A business with a
+   *  social page but no website is an active business that skipped the website step. */
+  socialLinks?: Record<string, string> | null;
 };
 
 export type ScoringInput = { audit: RawAudit | null; business: BusinessSignals; aiDesignImpression?: number | null };
@@ -295,12 +298,16 @@ export function scoreProspect(input: ScoringInput): ScoringOutput {
   ];
   let opportunity = clamp(oppComponents.reduce((s, x) => s + x.weight * x.score, 0) / oppComponents.reduce((s, x) => s + x.weight, 0));
   if (business.businessStatus === "CLOSED_PERMANENTLY") opportunity = Math.min(opportunity, 10);
+  // Social-only: they maintain a Facebook/Instagram page but have no website. That is an
+  // active, reachable business without a site – a slightly stronger lead than "nothing online".
+  const socialNetwork = !business.hasWebsite ? (["facebook", "instagram", "linkedin"] as const).find((n) => business.socialLinks?.[n]) ?? null : null;
+  if (socialNetwork) opportunity = clamp(opportunity + 5);
 
   // ── Labels ──────────────────────────────────────────────────────────────
   const labels: string[] = [];
   if (opportunity >= T.hotLead) labels.push("Hot Lead");
   else if (opportunity >= T.highOpportunity) labels.push("High Opportunity");
-  if (!business.hasWebsite) labels.push("No Website");
+  if (!business.hasWebsite) labels.push(socialNetwork ? "Social Only" : "No Website");
   if (rating != null && rating >= T.goodBusinessRating && reviews >= T.goodBusinessReviews && (!business.hasWebsite || (websiteScore != null && websiteScore < T.badWebsite))) labels.push("Good Business / Bad Website");
   if (business.hasWebsite && seo != null && seo < T.seoOpportunityBelow) labels.push("SEO Opportunity");
   if (business.hasWebsite && ((design != null && design < T.needsRedesignDesignBelow) || ageVerdict === "likely_outdated")) labels.push("Needs Redesign");
@@ -308,7 +315,8 @@ export function scoreProspect(input: ScoringInput): ScoringOutput {
 
   // ── Smart insights ──────────────────────────────────────────────────────
   const fmtRating = rating != null ? `${rating.toFixed(1)} rating` : null;
-  if (!business.hasWebsite) insights.push({ key: "no_website", text: `No website found${rating != null ? ` — despite ${fmtRating} and ${reviews} Google reviews` : ""}`, severity: "hot", source: hasGoogleData ? "google_business" : "osm" });
+  if (socialNetwork) insights.push({ key: "social_only", text: `Only a ${socialNetwork.charAt(0).toUpperCase() + socialNetwork.slice(1)} page, no website${rating != null ? ` — despite ${fmtRating} and ${reviews} Google reviews` : ""}`, severity: "hot", source: hasGoogleData ? "google_business" : "osm" });
+  else if (!business.hasWebsite) insights.push({ key: "no_website", text: `No website found${rating != null ? ` — despite ${fmtRating} and ${reviews} Google reviews` : ""}`, severity: "hot", source: hasGoogleData ? "google_business" : "osm" });
   if (business.hasWebsite && rating != null && rating >= 4.3 && reviews >= 25 && websiteScore != null && websiteScore < 50) insights.push({ key: "good_biz_bad_site", text: `${fmtRating} + ${reviews} reviews + ${ageVerdict === "likely_outdated" ? "outdated" : "weak"} website`, severity: "hot", source: "derived" });
   else if (business.hasWebsite && rating != null && rating >= 4.0 && reviews >= 10 && websiteScore != null && websiteScore < 60) insights.push({ key: "strong_biz_weak_digital", text: "Strong business with weak digital presence", severity: "high", source: "derived" });
   if (business.hasWebsite && reviews >= 20 && seo != null && seo < 45) insights.push({ key: "demand_weak_seo", text: "High local demand but weak SEO", severity: "high", source: "derived" });

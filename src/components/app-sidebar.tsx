@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Search, Building2, ListChecks, History, MessageSquareText, CalendarClock, Radar, Settings, Bookmark } from "lucide-react";
+import { LayoutDashboard, Search, Building2, ListChecks, History, MessageSquareText, CalendarClock, Radar, Settings, Bookmark, ClipboardPaste } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
 
@@ -12,6 +12,7 @@ export const NAV_GROUPS: { label: string; items: { href: string; label: string; 
     items: [
       { href: "/", label: "Dashboard", icon: LayoutDashboard },
       { href: "/find", label: "Find prospects", icon: Search },
+      { href: "/import", label: "Import list", icon: ClipboardPaste },
       { href: "/prospects", label: "Prospects", icon: Building2 },
       { href: "/lists", label: "Lists", icon: ListChecks },
       { href: "/scans", label: "Scrapes", icon: History },

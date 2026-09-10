@@ -86,6 +86,10 @@ model Scan {
   name         String
   /// Free-text industry / search term as entered ("Dakdekkers")
   query        String
+  /// "search" (industry + location) or "import" (pasted list of business names / Facebook pages)
+  kind         String     @default("search")
+  /// For kind=import: the parsed lines, see ImportItem in src/lib/import-parse.ts
+  importItems  Json?
   /// Key of a predefined industry (see src/lib/industries.ts) or null for custom
   industryKey  String?
   location     String
